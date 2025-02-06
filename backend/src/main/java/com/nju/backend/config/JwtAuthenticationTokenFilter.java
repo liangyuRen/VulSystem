@@ -1,10 +1,8 @@
 package com.nju.backend.config;
 
-
 import com.nju.backend.config.user.impl.utils.UserDetailsImpl;
 import com.nju.backend.repository.mapper.UserMapper;
 import com.nju.backend.repository.po.User;
-import com.sun.istack.internal.NotNull;
 import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,10 +15,12 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.NotNull;
 import java.io.IOException;
 
 @Component
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
+
     @Autowired
     private UserMapper userMapper;
 
