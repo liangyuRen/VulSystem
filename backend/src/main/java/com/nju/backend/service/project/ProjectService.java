@@ -1,15 +1,14 @@
 package com.nju.backend.service.project;
 
-import com.nju.backend.repository.po.Project;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ProjectService {
 
-    void createProject(Project project, MultipartFile file, String companyName);
+    void createProject(String name, String description, String language, int risk_threshold, MultipartFile file, String companyName);
 
-    void deleteProject(String projectName);
+    void deleteProject(Integer id);
 
-    void updateProject(Project project);
+    void updateProject(Integer id, String name, String description, int risk_threshold);
 
-    Object getProjectList(Integer page, Integer size);
+    void uploadFile(Integer id,MultipartFile file);
 }

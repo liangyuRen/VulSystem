@@ -4,10 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CompanyVO {
+public class CompanyVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
@@ -29,6 +31,11 @@ public class CompanyVO {
      * 公司项目ID，JSON格式，例如：{"projectId": "language"}
      */
     private String projectId;
+
+    /**
+     *是否实验室合作伙伴
+     */
+    private Integer isMember;
 
     /**
      * 软删除标志，0：未删除，1：已删除
