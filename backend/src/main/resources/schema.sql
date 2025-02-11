@@ -19,10 +19,12 @@ CREATE TABLE IF NOT EXISTS `vulnerability_report`
 (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `vulnerability_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `vulnerability` json NULL COMMENT '爆出的漏洞 key:vulnerabilityName value:',
     `disclosure_time` datetime NOT NULL,
     `riskLevel` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `referenceLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `affects_whitelist` int(11) NOT NULL,
+    `isdelete`  int(11) NOT NULL,
     PRIMARY KEY (`id`)
 )
     ENGINE=InnoDB
