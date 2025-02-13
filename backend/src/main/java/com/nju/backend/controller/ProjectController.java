@@ -63,4 +63,22 @@ public class ProjectController {
         }
     }
 
+    @GetMapping("/getVulnerabilityInfo")
+    public RespBean getVulnerabilityInfo(@RequestParam("id") int id) {
+        try {
+            return RespBean.success(projectService.getVulnerabilityInfo(id));
+        } catch (Exception e) {
+            return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
+        }
+    }
+
+    @GetMapping("/list")
+    public RespBean getProjectList(@RequestParam("companyId") int companyId, @RequestParam("page") int page, @RequestParam("size") int size) {
+        try {
+            return RespBean.success(projectService.getProjectList(companyId,page,size));
+        } catch (Exception e) {
+            return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
+        }
+    }
+
 }

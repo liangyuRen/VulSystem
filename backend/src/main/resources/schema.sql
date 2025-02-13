@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `vulnerability_report`
 (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `cve_id` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `description` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `description` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `vulnerability_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `vulnerability` json NULL COMMENT '爆出的漏洞 key:vulnerabilityName value:',
     `disclosure_time` datetime NOT NULL,
