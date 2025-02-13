@@ -63,10 +63,10 @@ public class ProjectController {
         }
     }
 
-    @GetMapping("/getVulnerabilityInfo")
+    @GetMapping("/getVulnerabilities")
     public RespBean getVulnerabilityInfo(@RequestParam("id") int id) {
         try {
-            return RespBean.success(projectService.getVulnerabilityInfo(id));
+            return RespBean.success(projectService.getVulnerabilities(id));
         } catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
         }

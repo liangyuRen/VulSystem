@@ -4,10 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProjectVO {
+public class ProjectVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
@@ -45,10 +47,6 @@ public class ProjectVO {
      */
     private Integer riskThreshold;
 
-    /**
-     * 项目涉及的漏洞信息，JSON格式，例如：{"vulnerabilityId":""}
-     */
-    private String vulnerability;
 
     /**
      * 软删除标志，0：未删除，1：已删除

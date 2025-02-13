@@ -62,12 +62,6 @@ public class Project implements Serializable {
     private Integer riskThreshold;
 
     /**
-     * 项目涉及的漏洞信息，JSON格式，例如：{"vulnerabilityId":""}
-     */
-    @TableField("vulnerability")
-    private String vulnerability;
-
-    /**
      * 软删除标志，0：未删除，1：已删除
      */
     @TableField("isdelete")

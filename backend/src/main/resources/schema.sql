@@ -21,7 +21,6 @@ CREATE TABLE IF NOT EXISTS `vulnerability_report`
     `cve_id` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `description` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `vulnerability_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `vulnerability` json NULL COMMENT '爆出的漏洞 key:vulnerabilityName value:',
     `disclosure_time` datetime NOT NULL,
     `riskLevel` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `referenceLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -75,7 +74,32 @@ CREATE TABLE IF NOT EXISTS `project`
     `file`  varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '存的是路径',
     `roadmap_file` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '存的是路径' ,
     `risk_threshold` int(11) NOT NULL COMMENT '"0":高风险风险阈值' ,
-    `vulnerability` json NOT NULL COMMENT '项目涉及的漏洞信息: {"vulnerabilityId":""}',
+    `isdelete`  int(11) NOT NULL,
+    PRIMARY KEY (`id`)
+)
+    ENGINE=InnoDB
+    DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
+    AUTO_INCREMENT=1
+    ;
+
+CREATE TABLE IF NOT EXISTS `project_vulnerability`
+(
+    `id`  int(11) NOT NULL AUTO_INCREMENT ,
+    `project_id` int(11) NOT NULL ,
+    `vulnerability_id` int(11) NOT NULL ,
+    `isdelete`  int(11) NOT NULL,
+    PRIMARY KEY (`id`)
+)
+    ENGINE=InnoDB
+    DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
+    AUTO_INCREMENT=1
+    ;
+
+CREATE TABLE IF NOT EXISTS `vulnerability_report_vulnerability`
+(
+    `id`  int(11) NOT NULL AUTO_INCREMENT ,
+    `vulnerability_report_id` int(11) NOT NULL ,
+    `vulnerability_id` int(11) NOT NULL ,
     `isdelete`  int(11) NOT NULL,
     PRIMARY KEY (`id`)
 )

@@ -1,6 +1,7 @@
 package com.nju.backend.service.project;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nju.backend.config.vo.VulnerabilityVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -16,7 +17,7 @@ public interface ProjectService {
 
     void uploadFile(Integer id,MultipartFile file);
 
-    List<Object> getVulnerabilityInfo(int id);
+    List<VulnerabilityVO> getVulnerabilities(int id);
 
     List<Map<String,String>> getProjectList(int companyId, int page, int size) throws JsonProcessingException;
 }

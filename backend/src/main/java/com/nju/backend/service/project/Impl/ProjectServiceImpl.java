@@ -4,10 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nju.backend.config.vo.VulnerabilityVO;
 import com.nju.backend.repository.mapper.CompanyMapper;
 import com.nju.backend.repository.mapper.ProjectMapper;
-import com.nju.backend.repository.po.Company;
-import com.nju.backend.repository.po.Project;
+import com.nju.backend.repository.mapper.ProjectVulnerabilityMapper;
+import com.nju.backend.repository.mapper.VulnerabilityMapper;
+import com.nju.backend.repository.po.*;
 import com.nju.backend.service.project.ProjectService;
 import com.nju.backend.service.project.util.ProjectUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,12 @@ public class ProjectServiceImpl implements ProjectService {
     @Autowired
     private CompanyMapper companyMapper;
 
+    @Autowired
+    private ProjectVulnerabilityMapper projectVulnerabilityMapper;
+
+    @Autowired
+    private VulnerabilityMapper vulnerabilityMapper;
+
     @Override
     public void createProject(String name, String description, String language, int risk_threshold, MultipartFile file, String companyName) {
         QueryWrapper<Project> queryWrapper = new QueryWrapper<>();
@@ -45,7 +53,6 @@ public class ProjectServiceImpl implements ProjectService {
         }
         project.setIsDelete(0);
         project.setRoadmapFile("");
-        project.setVulnerability("{}");
 
         projectMapper.insert(project);
 
@@ -71,16 +78,32 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public List<Object> getVulnerabilityInfo(int id) {
+    public List<VulnerabilityVO> getVulnerabilities(int id) {
         Project project = projectMapper.selectById(id);
-        if(project == null) {
-            throw new RuntimeException("Project does not exist.");
+        if (project == null || project.getIsDelete() == 1) {
+            throw new RuntimeException("Project not found or has been deleted");
         }
-        String vulnerability = project.getVulnerability();
-        //TODO: parse vulnerability
-        return Collections.emptyList();
 
+        QueryWrapper<ProjectVulnerability> wrapper = new QueryWrapper<>();
+        wrapper.eq("project_id", id)
+                .eq("isDelete", 0);
 
+        List<ProjectVulnerability> relations = projectVulnerabilityMapper.selectList(wrapper);
+
+        if (relations.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Integer> vulnerabilityIds = relations.stream()
+                .map(ProjectVulnerability::getVulnerabilityId)
+                .collect(Collectors.toList());
+
+        List<Vulnerability> vulnerabilities = vulnerabilityMapper.selectBatchIds(vulnerabilityIds);
+
+        return vulnerabilities.stream()
+                .filter(v -> v.getIsDelete() == 0) // 排除已删除漏洞
+                .map(Vulnerability::toVulnerabilityVO)
+                .collect(Collectors.toList());
     }
 
     @Override
