@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nju.backend.config.vo.ProjectVO;
 import com.nju.backend.config.vo.VulnerabilityVO;
 import com.nju.backend.repository.mapper.CompanyMapper;
 import com.nju.backend.repository.mapper.ProjectMapper;
@@ -16,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -45,8 +48,8 @@ public class ProjectServiceImpl implements ProjectService {
             throw new RuntimeException("Project already exists.");
         }
         Project project = new Project();
-        project.setProjectName(name);
-        project.setProjectDescription(description);
+        project.setName(name);
+        project.setDescription(description);
         project.setLanguage(language);
         project.setRiskThreshold(risk_threshold);
         if(!file.isEmpty()){
@@ -54,6 +57,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
         project.setIsDelete(0);
         project.setRoadmapFile("");
+        project.setCreateTime(new Date());
 
         projectMapper.insert(project);
 
@@ -61,8 +65,13 @@ public class ProjectServiceImpl implements ProjectService {
         if (company == null) {
             throw new RuntimeException("Company does not exist.");
         }
-        String projectInfo = project.getId() + ":" + project.getLanguage();
-        company.setProjectId(projectInfo);
+        if(company.getProjectId() == null || company.getProjectId().isEmpty()) {
+            company.setProjectId("{}");
+        }
+        String companyProjectId = company.getProjectId();
+        companyProjectId = companyProjectId.substring(0, companyProjectId.length() - 1) + ",\"" + project.getId() + "\":\"" + project.getLanguage() + "\"}";
+        company.setProjectId(companyProjectId);
+
         companyMapper.updateById(company);
     }
 
@@ -136,8 +145,8 @@ public class ProjectServiceImpl implements ProjectService {
 
         return paginatedProjects.stream().map(p -> {
             Map<String, String> map = new HashMap<>();
-            map.put("name", p.getProjectName());
-            map.put("description", p.getProjectDescription());
+            map.put("name", p.getName());
+            map.put("description", p.getDescription());
             map.put("risk_level", projectUtil.getRiskLevel(p.getId(),p.getRiskThreshold())); // 计算风险级别
             return map;
         }).collect(Collectors.toList());
@@ -266,6 +275,24 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    public ProjectVO getProjectInfo(int id) {
+        Project project = projectMapper.selectById(id);
+        ProjectVO projectVO = project.toVO();
+        projectVO.setHighRiskNum(projectUtil.getRiskNum(id,"high"));
+        projectVO.setMidRiskNum(projectUtil.getRiskNum(id,"mid"));
+        projectVO.setLowRiskNum(projectUtil.getRiskNum(id,"low"));
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todaySixAM = now.toLocalDate().atTime(LocalTime.of(6, 0));
+        LocalDateTime lastScanTime= now.isBefore(todaySixAM)
+                ? todaySixAM.minusDays(1)
+                : todaySixAM;
+
+        projectVO.setLastScanTime(lastScanTime.toString());
+        return projectVO;
+
+    }
+
+    @Override
     public void deleteProject(Integer id) {
         Project project = projectMapper.selectById(id);
         if(project == null) {
@@ -281,8 +308,8 @@ public class ProjectServiceImpl implements ProjectService {
         if(project == null) {
             throw new RuntimeException("Project does not exist.");
         }
-        project.setProjectName(name);
-        project.setProjectDescription(description);
+        project.setName(name);
+        project.setDescription(description);
         project.setRiskThreshold(risk_threshold);
         projectMapper.updateById(project);
     }

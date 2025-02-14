@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS `project`
 (
     `id`  int(11) NOT NULL AUTO_INCREMENT ,
     `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+    `create_time`  datetime NOT NULL ,
     `description` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
     `language`  varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
     `file`  varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '存的是路径',

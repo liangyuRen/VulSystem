@@ -2,8 +2,12 @@ package com.nju.backend.service.project.util;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nju.backend.config.FileStorageConfig;
+import com.nju.backend.repository.mapper.ProjectMapper;
 import com.nju.backend.repository.mapper.ProjectVulnerabilityMapper;
+import com.nju.backend.repository.mapper.VulnerabilityMapper;
+import com.nju.backend.repository.po.Project;
 import com.nju.backend.repository.po.ProjectVulnerability;
+import com.nju.backend.repository.po.Vulnerability;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class ProjectUtil {
@@ -21,7 +26,12 @@ public class ProjectUtil {
     @Autowired
     private ProjectVulnerabilityMapper projectVulnerabilityMapper;
 
+    @Autowired
+    private VulnerabilityMapper vulnerabilityMapper;
+
     private final FileStorageConfig fileStorageConfig;
+    @Autowired
+    private ProjectMapper projectMapper;
 
     public ProjectUtil(FileStorageConfig fileStorageConfig) {
         this.fileStorageConfig = fileStorageConfig;
@@ -63,6 +73,22 @@ public class ProjectUtil {
             return "低风险";
         }
         return "暂无风险";
+    }
+
+    public int getRiskNum(int projectId, String riskLevel) {
+        AtomicInteger riskNum = new AtomicInteger();
+        Project project =projectMapper.selectById(projectId);
+        projectVulnerabilityMapper.selectList(new QueryWrapper<ProjectVulnerability>().eq("project_id", project.getId()))
+                .forEach(pv -> {
+                    Vulnerability vulnerability = vulnerabilityMapper.selectById(pv.getVulnerabilityId());
+                    if (vulnerability == null) {
+                        return;
+                    }
+                    if (vulnerability.getRiskLevel().equals(riskLevel)) {
+                        riskNum.getAndIncrement();
+                    }
+                });
+        return riskNum.get();
     }
 
 

@@ -90,4 +90,13 @@ public class ProjectController {
         }
     }
 
+    @GetMapping("/info")
+    public RespBean getProjectInfo(@RequestParam("projectid") int id) {
+        try {
+            return RespBean.success(projectService.getProjectInfo(id));
+        } catch (Exception e) {
+            return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
+        }
+    }
+
 }
