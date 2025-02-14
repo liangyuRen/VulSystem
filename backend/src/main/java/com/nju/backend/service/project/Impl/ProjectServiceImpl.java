@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Component
@@ -133,22 +134,136 @@ public class ProjectServiceImpl implements ProjectService {
         int end = Math.min(start + size, projects.size());
         List<Project> paginatedProjects = projects.subList(start, end);
 
-        //TODO 计算风险级别
-
         return paginatedProjects.stream().map(p -> {
             Map<String, String> map = new HashMap<>();
             map.put("name", p.getProjectName());
             map.put("description", p.getProjectDescription());
-            map.put("risk_level", getRiskLevel(p.getRiskThreshold())); // 计算风险级别
+            map.put("risk_level", projectUtil.getRiskLevel(p.getId(),p.getRiskThreshold())); // 计算风险级别
             return map;
         }).collect(Collectors.toList());
     }
 
-    private String getRiskLevel(int riskThreshold) {
-        //TODO
-        return "low";
-    }
+    @Override
+    public Object getProjectStatistics(int companyId) {
+        int highRiskCount = 0;
+        int lowRiskCount = 0;
+        int noRiskCount = 0;
+        int projectCount;
+        long vulnerabilityCount = 0;
+        AtomicInteger cVulnerabilityCount = new AtomicInteger();
+        AtomicInteger javaVulnerabilityCount = new AtomicInteger();
+        Map<String,Integer> highVulnerabilityNumByDay = new HashMap<>();
+        Map<String,Integer> midVulnerabilityNumByDay = new HashMap<>();
+        Map<String,Integer> lowVulnerabilityNumByDay = new HashMap<>();
+        int thirdLibraryCount;
 
+        Company company = companyMapper.selectById(companyId);
+        if (company == null) {
+            throw new RuntimeException("Company does not exist.");
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, String> projectMap = null;
+        try {
+            projectMap = objectMapper.readValue(company.getProjectId(), new TypeReference<Map<String, String>>() {});
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        Map<String,String> thirdLibraryMap = null;
+        try {
+            thirdLibraryMap = objectMapper.readValue(company.getWhiteList(), new TypeReference<Map<String, String>>() {});
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        if(projectMap == null) {
+            projectCount = 0;
+        }else{
+            projectCount = projectMap.size();
+        }
+
+        if(thirdLibraryMap == null) {
+            thirdLibraryCount = 0;
+        }else {
+            thirdLibraryCount = thirdLibraryMap.size();
+        }
+
+
+        if(projectMap!=null){
+            for (String projectId : projectMap.keySet()) {
+                Project project = projectMapper.selectById(Integer.parseInt(projectId));
+                if (project == null) {
+                    throw new RuntimeException("Project does not exist.");
+                }
+
+                switch (projectUtil.getRiskLevel(project.getId(), project.getRiskThreshold())) {
+                    case "高风险":
+                        highRiskCount++;
+                        break;
+                    case "低风险":
+                        lowRiskCount++;
+                        break;
+                    case "暂无风险":
+                        noRiskCount++;
+                        break;
+                }
+
+                vulnerabilityCount += projectUtil.getVulnerabilityCount(project.getId());
+
+                projectVulnerabilityMapper.selectList(new QueryWrapper<ProjectVulnerability>().eq("project_id", project.getId()))
+                        .forEach(pv -> {
+                            Vulnerability vulnerability = vulnerabilityMapper.selectById(pv.getVulnerabilityId());
+                            if (vulnerability == null) {
+                                return;
+                            }
+                            if (vulnerability.getLanguage().equals("c")||vulnerability.getLanguage().equals("c++")) {
+                                cVulnerabilityCount.getAndIncrement();
+                            } else if (vulnerability.getLanguage().equals("java")) {
+                                javaVulnerabilityCount.getAndIncrement();
+                            }
+
+                            String dayOfWeek = projectUtil.timeToDayOfWeek(vulnerability.getTime());
+                            switch (vulnerability.getRiskLevel()) {
+                                case "high":
+                                    highVulnerabilityNumByDay.put(dayOfWeek, highVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
+                                    break;
+                                case "mid":
+                                    midVulnerabilityNumByDay.put(dayOfWeek, midVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
+                                    break;
+                                case "low":
+                                    lowVulnerabilityNumByDay.put(dayOfWeek, lowVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
+                                    break;
+                            }
+                        });
+            }
+        }
+
+        String highVulByDay;
+        String midVulByDay;
+        String lowVulByDay;
+        try {
+            highVulByDay = objectMapper.writeValueAsString(highVulnerabilityNumByDay);
+            midVulByDay = objectMapper.writeValueAsString(midVulnerabilityNumByDay);
+            lowVulByDay = objectMapper.writeValueAsString(lowVulnerabilityNumByDay);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error serializing vulnerability count", e);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("highRiskNum", highRiskCount);
+        result.put("lowRiskNum", lowRiskCount);
+        result.put("noRiskNum", noRiskCount);
+        result.put("projectNum", projectCount);
+        result.put("thirdLibraryNum", thirdLibraryCount);
+        result.put("vulnerabilityNum", vulnerabilityCount);
+        result.put("highVulnerabilityNumByDay", highVulByDay);
+        result.put("midVulnerabilityNumByDay", midVulByDay);
+        result.put("lowVulnerabilityNumByDay", lowVulByDay);
+        result.put("cVulnerabilityNum", cVulnerabilityCount);
+        result.put("javaVulnerabilityNum", javaVulnerabilityCount);
+
+        return result;
+    }
 
     @Override
     public void deleteProject(Integer id) {

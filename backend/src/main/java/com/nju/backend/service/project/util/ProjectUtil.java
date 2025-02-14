@@ -1,15 +1,25 @@
 package com.nju.backend.service.project.util;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nju.backend.config.FileStorageConfig;
+import com.nju.backend.repository.mapper.ProjectVulnerabilityMapper;
+import com.nju.backend.repository.po.ProjectVulnerability;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Component
 public class ProjectUtil {
+
+    @Autowired
+    private ProjectVulnerabilityMapper projectVulnerabilityMapper;
 
     private final FileStorageConfig fileStorageConfig;
 
@@ -39,4 +49,34 @@ public class ProjectUtil {
 
         return filePath;
     }
+
+
+    public String getRiskLevel(int projectId,int riskThreshold) {
+        QueryWrapper<ProjectVulnerability> wrapper = new QueryWrapper<>();
+        wrapper.eq("project_id", projectId)
+                .eq("isDelete", 0);
+        long vulnerabilityCount = projectVulnerabilityMapper.selectCount(wrapper);
+        if(vulnerabilityCount >= riskThreshold) {
+            return "高风险";
+        }
+        else if(vulnerabilityCount > 0) {
+            return "低风险";
+        }
+        return "暂无风险";
+    }
+
+
+    public long getVulnerabilityCount(int projectId) {
+        QueryWrapper<ProjectVulnerability> wrapper = new QueryWrapper<>();
+        wrapper.eq("project_id", projectId)
+                .eq("isDelete", 0);
+        return projectVulnerabilityMapper.selectCount(wrapper);
+    }
+
+    public String timeToDayOfWeek(Date time) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE", Locale.ENGLISH);
+        LocalDateTime localDateTime = time.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        return localDateTime.format(formatter).substring(0,3);
+    }
+
 }

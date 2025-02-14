@@ -20,4 +20,6 @@ public interface ProjectService {
     List<VulnerabilityVO> getVulnerabilities(int id);
 
     List<Map<String,String>> getProjectList(int companyId, int page, int size) throws JsonProcessingException;
+
+    Object getProjectStatistics(int companyId);
 }

@@ -81,4 +81,13 @@ public class ProjectController {
         }
     }
 
+    @GetMapping("/statistics")
+    public RespBean getProjectStatistics(@RequestParam("companyId") int companyId) {
+        try {
+            return RespBean.success(projectService.getProjectStatistics(companyId));
+        } catch (Exception e) {
+            return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
+        }
+    }
+
 }
