@@ -233,13 +233,13 @@ public class ProjectServiceImpl implements ProjectService {
 
                             String dayOfWeek = projectUtil.timeToDayOfWeek(vulnerability.getTime());
                             switch (vulnerability.getRiskLevel()) {
-                                case "high":
+                                case "High":
                                     highVulnerabilityNumByDay.put(dayOfWeek, highVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
                                     break;
-                                case "mid":
+                                case "Medium":
                                     midVulnerabilityNumByDay.put(dayOfWeek, midVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
                                     break;
-                                case "low":
+                                case "Low":
                                     lowVulnerabilityNumByDay.put(dayOfWeek, lowVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
                                     break;
                             }
@@ -278,9 +278,9 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectVO getProjectInfo(int id) {
         Project project = projectMapper.selectById(id);
         ProjectVO projectVO = project.toVO();
-        projectVO.setHighRiskNum(projectUtil.getRiskNum(id,"high"));
-        projectVO.setMidRiskNum(projectUtil.getRiskNum(id,"mid"));
-        projectVO.setLowRiskNum(projectUtil.getRiskNum(id,"low"));
+        projectVO.setHighRiskNum(projectUtil.getRiskNum(id,"High"));
+        projectVO.setMidRiskNum(projectUtil.getRiskNum(id,"Medium"));
+        projectVO.setLowRiskNum(projectUtil.getRiskNum(id,"Low"));
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime todaySixAM = now.toLocalDate().atTime(LocalTime.of(6, 0));
         LocalDateTime lastScanTime= now.isBefore(todaySixAM)
