@@ -44,6 +44,12 @@ public class Company implements Serializable {
     private String projectId;
 
     /**
+     *是否实验室合作伙伴
+     */
+    @TableField("ismember")
+    private Integer isMember;
+
+    /**
      * 软删除标志，0：未删除，1：已删除
      */
     @TableField("isdelete")

@@ -4,10 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProjectVO {
+public class ProjectVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
@@ -21,6 +23,11 @@ public class ProjectVO {
     private String projectName;
 
     /**
+     * 创建时间
+     */
+    private String createTime;
+
+    /**
      * 项目描述
      */
     private String projectDescription;
@@ -31,27 +38,28 @@ public class ProjectVO {
     private String language;
 
     /**
-     * 项目文件地址
-     */
-    private String file;
-
-    /**
-     * 项目路线图文件地址
-     */
-    private String roadmapFile;
-
-    /**
      * 高风险风险阈值，"0"表示高风险风险阈值
      */
     private Integer riskThreshold;
-
+    
     /**
-     * 项目涉及的漏洞信息，JSON格式，例如：{"vulnerabilityId":""}
+     *高风险漏洞数量 
      */
-    private String vulnerability;
-
+    private Integer highRiskNum;
+    
     /**
-     * 软删除标志，0：未删除，1：已删除
+     *低风险漏洞数量 
      */
-    private Integer isDelete;
+    private Integer lowRiskNum;
+    
+    /**
+     *中风险漏洞数量 
+     */
+    private Integer midRiskNum;
+    
+    /**
+     *最后扫描时间
+     */
+    private String lastScanTime;
+
 }
