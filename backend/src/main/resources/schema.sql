@@ -58,6 +58,9 @@ CREATE TABLE IF NOT EXISTS `company`
     `projectid` json NULL  COMMENT 'key:projectid value:language' ,
     `ismember` INT(11) NOT NULL COMMENT '是否是实验室合作企业',
     `isdelete`  int(11) NOT NULL,
+    `detect_strategy` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci  NULL DEFAULT NULL COMMENT '漏洞检测策略',
+    `similarity_threshold` int(11) NOT NULL COMMENT '相似度阈值',
+    `max_detect_num` int(11) NOT NULL COMMENT '最大检测次数',
     PRIMARY KEY (`id`)
 )
     ENGINE=InnoDB

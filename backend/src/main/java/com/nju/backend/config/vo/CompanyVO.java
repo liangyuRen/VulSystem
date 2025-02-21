@@ -41,4 +41,20 @@ public class CompanyVO implements Serializable {
      * 软删除标志，0：未删除，1：已删除
      */
     private Integer isDelete;
+
+    /**
+     * 漏洞检测策略
+     */
+    private String detectStrategy;
+
+    /**
+     * 相似度阈值
+     */
+    private Double similarityThreshold;
+
+    /**
+     * 最大检测次数
+     */
+    private Integer maxDetectNums;
+
 }

@@ -50,6 +50,24 @@ public class Company implements Serializable {
     private Integer isMember;
 
     /**
+     * 漏洞检测策略
+     */
+    @TableField("detect_strategy")
+    private String detectStrategy;
+
+    /**
+     * 相似度阈值
+     */
+    @TableField("similarity_threshold")
+    private Double similarityThreshold;
+
+    /**
+     * 最大检测次数
+     */
+    @TableField("max_detect_nums")
+    private Integer maxDetectNums;
+
+    /**
      * 软删除标志，0：未删除，1：已删除
      */
     @TableField("isdelete")
