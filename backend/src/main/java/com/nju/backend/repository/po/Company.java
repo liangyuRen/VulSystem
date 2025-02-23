@@ -64,7 +64,7 @@ public class Company implements Serializable {
     /**
      * 最大检测次数
      */
-    @TableField("max_detect_nums")
+    @TableField("max_detect_num")
     private Integer maxDetectNums;
 
     /**

@@ -145,6 +145,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         return paginatedProjects.stream().map(p -> {
             Map<String, String> map = new HashMap<>();
+            map.put("id", String.valueOf(p.getId()));
             map.put("name", p.getName());
             map.put("description", p.getDescription());
             map.put("risk_level", projectUtil.getRiskLevel(p.getId(),p.getRiskThreshold())); // 计算风险级别
