@@ -140,6 +140,7 @@ public class ProjectServiceImpl implements ProjectService {
             map.put("name", p.getName());
             map.put("description", p.getDescription());
             map.put("risk_level", projectUtil.getRiskLevel(p.getId(),p.getRiskThreshold())); // 计算风险级别
+            map.put("risk_threshold", String.valueOf(p.getRiskThreshold()));
             return map;
         }).collect(Collectors.toList());
     }
