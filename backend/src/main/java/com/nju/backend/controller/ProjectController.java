@@ -20,11 +20,11 @@ public class ProjectController {
             @RequestParam("description") String description,
             @RequestParam("language") String language,
             @RequestParam("risk_threshold") int risk_threshold,
-            @RequestParam(value = "file", required = false) MultipartFile file,
-            @RequestParam("companyName") String companyName) {
+            @RequestParam("companyName") String companyName,
+            @RequestParam("filePath") String filePath) {
         try {
             // 调用服务层的方法创建项目
-            projectService.createProject(name, description, language, risk_threshold, file, companyName);
+            projectService.createProject(name, description, language, risk_threshold, companyName,filePath);
             return RespBean.success();
         } catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
@@ -32,10 +32,9 @@ public class ProjectController {
     }
 
     @PostMapping("/uploadFile")
-    public RespBean uploadFile(@RequestParam("id") int id,@RequestParam("file") MultipartFile file) {
+    public RespBean uploadFile(@RequestParam("file") MultipartFile file) {
         try {
-            projectService.uploadFile(id,file);
-            return RespBean.success();
+            return RespBean.success(projectService.uploadFile(file));
         } catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
         }

@@ -26,12 +26,6 @@ public class User implements Serializable {
     private Integer id;
 
     /**
-     * 用户邮箱
-     **/
-    @TableField("email")
-    private String email;
-
-    /**
      * 用户姓名
      **/
     @TableField("username")

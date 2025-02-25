@@ -10,13 +10,13 @@ import java.util.Map;
 
 public interface ProjectService {
 
-    void createProject(String name, String description, String language, int risk_threshold, MultipartFile file, String companyName);
+    void createProject(String name, String description, String language, int risk_threshold, String companyName, String filePath);
 
     void deleteProject(Integer id);
 
     void updateProject(Integer id, String name, String description, int risk_threshold);
 
-    void uploadFile(Integer id,MultipartFile file);
+    String uploadFile(MultipartFile file);
 
     List<VulnerabilityVO> getVulnerabilities(int id);
 

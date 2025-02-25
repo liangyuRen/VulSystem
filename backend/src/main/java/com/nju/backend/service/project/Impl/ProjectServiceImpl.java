@@ -42,7 +42,7 @@ public class ProjectServiceImpl implements ProjectService {
     private VulnerabilityMapper vulnerabilityMapper;
 
     @Override
-    public void createProject(String name, String description, String language, int risk_threshold, MultipartFile file, String companyName) {
+    public void createProject(String name, String description, String language, int risk_threshold, String companyName,String filePath) {
         QueryWrapper<Project> queryWrapper = new QueryWrapper<>();
         if(projectMapper.selectOne(queryWrapper.eq("name", name)) != null) {
             throw new RuntimeException("Project already exists.");
@@ -52,12 +52,10 @@ public class ProjectServiceImpl implements ProjectService {
         project.setDescription(description);
         project.setLanguage(language);
         project.setRiskThreshold(risk_threshold);
-        if(!file.isEmpty()){
-            project.setFile(projectUtil.saveFile(file));
-        }
         project.setIsDelete(0);
         project.setRoadmapFile("");
         project.setCreateTime(new Date());
+        project.setFile(filePath);
 
         projectMapper.insert(project);
 
@@ -76,15 +74,8 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public void uploadFile(Integer id, MultipartFile file) {
-        Project project = projectMapper.selectById(id);
-        if(project == null) {
-            throw new RuntimeException("Project does not exist.");
-        }
-        if(!file.isEmpty()){
-            project.setFile(projectUtil.saveFile(file));
-        }
-        projectMapper.updateById(project);
+    public String uploadFile(MultipartFile file) {
+        return projectUtil.saveFile(file);
     }
 
     @Override
@@ -314,5 +305,6 @@ public class ProjectServiceImpl implements ProjectService {
         project.setRiskThreshold(risk_threshold);
         projectMapper.updateById(project);
     }
+
 
 }
