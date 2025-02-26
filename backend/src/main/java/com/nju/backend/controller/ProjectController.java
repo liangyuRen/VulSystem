@@ -20,11 +20,11 @@ public class ProjectController {
             @RequestParam("description") String description,
             @RequestParam("language") String language,
             @RequestParam("risk_threshold") int risk_threshold,
-            @RequestParam("companyName") String companyName,
+            @RequestParam("companyId") int companyId,
             @RequestParam("filePath") String filePath) {
         try {
             // 调用服务层的方法创建项目
-            projectService.createProject(name, description, language, risk_threshold, companyName,filePath);
+            projectService.createProject(name, description, language, risk_threshold, companyId,filePath);
             return RespBean.success();
         } catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());

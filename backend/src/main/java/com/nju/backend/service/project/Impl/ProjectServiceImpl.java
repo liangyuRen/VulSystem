@@ -42,7 +42,7 @@ public class ProjectServiceImpl implements ProjectService {
     private VulnerabilityMapper vulnerabilityMapper;
 
     @Override
-    public void createProject(String name, String description, String language, int risk_threshold, String companyName,String filePath) {
+    public void createProject(String name, String description, String language, int risk_threshold, int companyId,String filePath) {
         QueryWrapper<Project> queryWrapper = new QueryWrapper<>();
         if(projectMapper.selectOne(queryWrapper.eq("name", name)) != null) {
             throw new RuntimeException("Project already exists.");
@@ -59,7 +59,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         projectMapper.insert(project);
 
-        Company company = companyMapper.selectOne(new QueryWrapper<Company>().eq("name", companyName));
+        Company company = companyMapper.selectById(companyId);
         if (company == null) {
             throw new RuntimeException("Company does not exist.");
         }

@@ -10,7 +10,7 @@ import java.util.Map;
 
 public interface ProjectService {
 
-    void createProject(String name, String description, String language, int risk_threshold, String companyName, String filePath);
+    void createProject(String name, String description, String language, int risk_threshold, int companyId, String filePath);
 
     void deleteProject(Integer id);
 

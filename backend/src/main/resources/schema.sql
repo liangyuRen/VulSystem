@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS `user`
 (
     `id` INT(11) NOT NULL AUTO_INCREMENT COMMENT '用户ID',
     `email` VARCHAR(255) NOT NULL COMMENT '用户邮箱',
-    `username` VARCHAR(255) NOT NULL COMMENT '用户姓名',
+    `company_name` VARCHAR(255) NOT NULL COMMENT '公司名称',
+    `company_id` INT(11) NOT NULL COMMENT '公司ID',
     `password` VARCHAR(255) NOT NULL COMMENT '用户密码',
     `confirm_code` VARCHAR(255) DEFAULT NULL COMMENT '邮箱注册唯一认证UUID',
     `activation_time` DATETIME DEFAULT NULL COMMENT '激活失效时间',
