@@ -150,6 +150,9 @@ public class ProjectServiceImpl implements ProjectService {
         int highRiskCount = 0;
         int lowRiskCount = 0;
         int noRiskCount = 0;
+        AtomicInteger lowRiskVulNum = new AtomicInteger();
+        AtomicInteger highRiskVulNum = new AtomicInteger();
+        AtomicInteger mediumRiskVulNum = new AtomicInteger();
         int projectCount;
         long vulnerabilityCount = 0;
         AtomicInteger cVulnerabilityCount = new AtomicInteger();
@@ -228,12 +231,15 @@ public class ProjectServiceImpl implements ProjectService {
                             switch (vulnerability.getRiskLevel()) {
                                 case "High":
                                     highVulnerabilityNumByDay.put(dayOfWeek, highVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
+                                    highRiskVulNum.getAndIncrement();
                                     break;
                                 case "Medium":
                                     midVulnerabilityNumByDay.put(dayOfWeek, midVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
+                                    mediumRiskVulNum.getAndIncrement();
                                     break;
                                 case "Low":
                                     lowVulnerabilityNumByDay.put(dayOfWeek, lowVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
+                                    lowRiskVulNum.getAndIncrement();
                                     break;
                             }
                         });
@@ -263,6 +269,9 @@ public class ProjectServiceImpl implements ProjectService {
         result.put("lowVulnerabilityNumByDay", lowVulByDay);
         result.put("cVulnerabilityNum", cVulnerabilityCount);
         result.put("javaVulnerabilityNum", javaVulnerabilityCount);
+        result.put("lowRiskVulnerabilityNum", lowRiskVulNum);
+        result.put("highRiskVulnerabilityNum", highRiskVulNum);
+        result.put("midRiskVulnerabilityNum", mediumRiskVulNum);
 
         return result;
     }
