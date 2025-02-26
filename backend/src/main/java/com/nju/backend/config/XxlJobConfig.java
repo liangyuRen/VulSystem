@@ -15,7 +15,8 @@ public class XxlJobConfig {
         xxlJobSpringExecutor.setAccessToken("default_token");
         xxlJobSpringExecutor.setIp("127.0.0.1");
         xxlJobSpringExecutor.setPort(9999);
-        xxlJobSpringExecutor.setLogPath("/data/applogs/xxl-job/jobhandler");
+//        xxlJobSpringExecutor.setLogPath("/data/applogs/xxl-job/jobhandler");
+        xxlJobSpringExecutor.setLogPath("/Users/mac/applogs/xxl-job/jobhandler");
         xxlJobSpringExecutor.setLogRetentionDays(30);
         return xxlJobSpringExecutor;
     }

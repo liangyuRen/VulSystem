@@ -1,5 +1,6 @@
 package com.nju.backend.service.company.Impl;
 
+import com.nju.backend.config.vo.CompanyVO;
 import com.nju.backend.repository.mapper.CompanyMapper;
 import com.nju.backend.repository.po.Company;
 import com.nju.backend.service.company.CompanyService;
@@ -22,4 +23,17 @@ public class CompanyServiceImpl implements CompanyService {
         company.setMaxDetectNums(maxDetectNums);
         companyMapper.updateById(company);
     }
+
+    @Override
+    public CompanyVO getStrategy(Integer companyId) {
+       Company company = companyMapper.selectById(companyId);
+       CompanyVO companyVO = new CompanyVO();
+       companyVO.setDetectStrategy(company.getDetectStrategy());
+       companyVO.setMaxDetectNums(company.getMaxDetectNums());
+       companyVO.setSimilarityThreshold(company.getSimilarityThreshold());
+       companyVO.setIsMember(company.getIsMember());
+       return companyVO;
+    }
+
+
 }
