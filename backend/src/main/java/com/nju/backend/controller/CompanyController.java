@@ -5,10 +5,7 @@ import com.nju.backend.config.RespBeanEnum;
 import com.nju.backend.service.company.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/company")
@@ -25,7 +22,14 @@ public class CompanyController {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
         }
     }
-
+    @GetMapping("/getStrategy")
+    public RespBean getStrategy(@RequestParam("companyId") Integer companyId) {
+        try {
+            return RespBean.success(companyService.getStrategy(companyId));
+        } catch (Exception e) {
+            return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
+        }
+    }
 
 
 }

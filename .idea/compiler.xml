@@ -10,5 +10,13 @@
         <module name="backend" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="xxl-job" target="17" />
+      <module name="xxl-job-admin" target="17" />
+      <module name="xxl-job-core" target="17" />
+      <module name="xxl-job-executor-sample-frameless" target="17" />
+      <module name="xxl-job-executor-sample-springboot" target="17" />
+      <module name="xxl-job-executor-samples" target="17" />
+    </bytecodeTargetLevel>
   </component>
 </project>
