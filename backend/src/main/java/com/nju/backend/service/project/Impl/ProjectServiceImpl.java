@@ -10,10 +10,12 @@ import com.nju.backend.repository.mapper.*;
 import com.nju.backend.repository.po.*;
 import com.nju.backend.service.project.ProjectService;
 import com.nju.backend.service.project.util.ProjectUtil;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,7 +30,9 @@ import java.util.stream.Collectors;
 import static jdk.nashorn.internal.runtime.regexp.joni.Config.log;
 
 @Component
-public class ProjectServiceImpl implements ProjectService {
+public class ProjectServiceImpl implements ProjectService, ApplicationContextAware {
+
+    private ApplicationContext applicationContext;
 
     @Autowired
     private ProjectMapper projectMapper;
@@ -45,10 +49,16 @@ public class ProjectServiceImpl implements ProjectService {
     @Autowired
     private VulnerabilityMapper vulnerabilityMapper;
 
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+
     @Autowired
     private WhiteListMapper whiteListMapper;
 
     @Override
+    @Transactional
     public void createProject(String name, String description, String language, int risk_threshold, int companyId,String filePath) {
         QueryWrapper<Project> queryWrapper = new QueryWrapper<>();
         if(projectMapper.selectOne(queryWrapper.eq("name", name)) != null) {
@@ -79,14 +89,14 @@ public class ProjectServiceImpl implements ProjectService {
 
         companyMapper.updateById(company);
 
-        if(language.equals("java")) {
-            asyncParseJavaProject(project.getId(), filePath,companyId);
-        }
+        if ("java".equals(language)) {
+            ((ProjectService) applicationContext.getBean(ProjectService.class)).asyncParseJavaProject(project.getId(), filePath, companyId);        }
     }
 
     // 在创建方法中仅触发异步解析
     @Async("projectAnalysisExecutor")
-    public void asyncParseJavaProject(int projectId, String filePath,int companyId) {
+    @Override
+    public void asyncParseJavaProject(int projectId, String filePath, int companyId) {
         try {
             RestTemplate restTemplate = new RestTemplate();
             String url = UriComponentsBuilder.fromHttpUrl("http://localhost:5000/parse/pom_parse")
@@ -321,6 +331,7 @@ public class ProjectServiceImpl implements ProjectService {
         return projectVO;
 
     }
+
 
     @Override
     public void deleteProject(Integer id) {
