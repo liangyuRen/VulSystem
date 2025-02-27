@@ -1,13 +1,14 @@
 package com.nju.backend.service.project.util;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nju.backend.config.FileStorageConfig;
 import com.nju.backend.repository.mapper.ProjectMapper;
 import com.nju.backend.repository.mapper.ProjectVulnerabilityMapper;
 import com.nju.backend.repository.mapper.VulnerabilityMapper;
-import com.nju.backend.repository.po.Project;
-import com.nju.backend.repository.po.ProjectVulnerability;
-import com.nju.backend.repository.po.Vulnerability;
+import com.nju.backend.repository.po.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -103,6 +104,17 @@ public class ProjectUtil {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE", Locale.ENGLISH);
         LocalDateTime localDateTime = time.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
         return localDateTime.format(formatter).substring(0,3);
+    }
+
+    public  List<WhiteList> parseJsonData(String jsonData) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readValue(jsonData, new TypeReference<List<WhiteList>>() {
+            });
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
     }
 
 }

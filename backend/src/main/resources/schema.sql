@@ -87,6 +87,22 @@ CREATE TABLE IF NOT EXISTS `project`
     AUTO_INCREMENT=1
     ;
 
+CREATE TABLE IF NOT EXISTS `white_list`
+(
+    `id`  int(11) NOT NULL AUTO_INCREMENT ,
+    `project_id` int(11) NOT NULL ,
+    `company_id` int(11) NOT NULL ,
+    `language` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL  ,
+    `description` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+    `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+    `isdelete`  int(11) NOT NULL,
+    PRIMARY KEY (`id`)
+)
+    ENGINE=InnoDB
+    DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
+    AUTO_INCREMENT=1
+    ;
+
 CREATE TABLE IF NOT EXISTS `project_vulnerability`
 (
     `id`  int(11) NOT NULL AUTO_INCREMENT ,

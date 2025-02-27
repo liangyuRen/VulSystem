@@ -6,22 +6,26 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nju.backend.config.vo.ProjectVO;
 import com.nju.backend.config.vo.VulnerabilityVO;
-import com.nju.backend.repository.mapper.CompanyMapper;
-import com.nju.backend.repository.mapper.ProjectMapper;
-import com.nju.backend.repository.mapper.ProjectVulnerabilityMapper;
-import com.nju.backend.repository.mapper.VulnerabilityMapper;
+import com.nju.backend.repository.mapper.*;
 import com.nju.backend.repository.po.*;
 import com.nju.backend.service.project.ProjectService;
 import com.nju.backend.service.project.util.ProjectUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import static jdk.nashorn.internal.runtime.regexp.joni.Config.log;
 
 @Component
 public class ProjectServiceImpl implements ProjectService {
@@ -40,6 +44,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private VulnerabilityMapper vulnerabilityMapper;
+
+    @Autowired
+    private WhiteListMapper whiteListMapper;
 
     @Override
     public void createProject(String name, String description, String language, int risk_threshold, int companyId,String filePath) {
@@ -71,6 +78,35 @@ public class ProjectServiceImpl implements ProjectService {
         company.setProjectId(companyProjectId);
 
         companyMapper.updateById(company);
+
+        if(language.equals("java")) {
+            asyncParseJavaProject(project.getId(), filePath,companyId);
+        }
+    }
+
+    // 在创建方法中仅触发异步解析
+    @Async("projectAnalysisExecutor")
+    public void asyncParseJavaProject(int projectId, String filePath,int companyId) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            String url = UriComponentsBuilder.fromHttpUrl("http://localhost:5000/parse/pom_parse")
+                    .queryParam("project_folder", filePath)
+                    .encode() // 自动处理 URL 编码
+                    .build()
+                    .toUriString();
+
+            String response = restTemplate.getForObject(url, String.class);
+            List<WhiteList>  whiteLists = projectUtil.parseJsonData(response);
+            for(WhiteList whiteList:whiteLists){
+                whiteList.setCompany_id(companyId);
+                whiteList.setProject_id(projectId);
+                whiteList.setLanguage("java");
+                whiteList.setIsdelete(0);
+                whiteListMapper.insert(whiteList);
+            }
+        } catch (Exception e) {
+            log.println("Error parsing project " + projectId + ": " + e.getMessage());
+        }
     }
 
     @Override
@@ -162,6 +198,10 @@ public class ProjectServiceImpl implements ProjectService {
         Map<String,Integer> lowVulnerabilityNumByDay = new HashMap<>();
         int thirdLibraryCount;
 
+        QueryWrapper<WhiteList> whiteListQueryWrapper = new QueryWrapper<>();
+        whiteListQueryWrapper.eq("company_id", companyId);
+        thirdLibraryCount = whiteListMapper.selectList(whiteListQueryWrapper).size();
+
         Company company = companyMapper.selectById(companyId);
         if (company == null) {
             throw new RuntimeException("Company does not exist.");
@@ -174,23 +214,11 @@ public class ProjectServiceImpl implements ProjectService {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        Map<String,String> thirdLibraryMap = null;
-        try {
-            thirdLibraryMap = objectMapper.readValue(company.getWhiteList(), new TypeReference<Map<String, String>>() {});
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
 
         if(projectMap == null) {
             projectCount = 0;
         }else{
             projectCount = projectMap.size();
-        }
-
-        if(thirdLibraryMap == null) {
-            thirdLibraryCount = 0;
-        }else {
-            thirdLibraryCount = thirdLibraryMap.size();
         }
 
 
