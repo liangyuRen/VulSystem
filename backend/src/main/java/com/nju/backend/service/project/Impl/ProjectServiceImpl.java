@@ -332,7 +332,6 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
 
     }
 
-
     @Override
     public void deleteProject(Integer id) {
         Project project = projectMapper.selectById(id);
@@ -341,6 +340,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         }
         project.setIsDelete(1);
         projectMapper.updateById(project);
+        whiteListMapper.delete(new QueryWrapper<WhiteList>().eq("project_id", id));
     }
 
     @Override
@@ -354,6 +354,5 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         project.setRiskThreshold(risk_threshold);
         projectMapper.updateById(project);
     }
-
 
 }
