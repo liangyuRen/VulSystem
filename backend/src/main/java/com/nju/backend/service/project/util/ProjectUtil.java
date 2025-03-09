@@ -13,13 +13,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @Component
 public class ProjectUtil {
@@ -38,30 +42,87 @@ public class ProjectUtil {
         this.fileStorageConfig = fileStorageConfig;
     }
 
-    public String saveFile(MultipartFile file) {
-        String uploadDir = fileStorageConfig.getUploadDir();
+    public String unzipAndSaveFile(MultipartFile file) throws IOException {
+        String baseUploadDir = fileStorageConfig.getUploadDir();
 
-        File directory = new File(uploadDir);
-        if (!directory.exists()) {
-            if(!directory.mkdirs()){
-                throw new RuntimeException("文件上传失败: 创建文件夹失败");
+        // 创建基础上传目录（如果不存在）
+        File baseDir = new File(baseUploadDir);
+        if (!baseDir.exists() && !baseDir.mkdirs()) {
+            throw new RuntimeException("文件上传失败: 创建基础文件夹失败");
+        }
+
+        // 生成唯一子目录（防止重名）
+        String uniqueDirName = UUID.randomUUID().toString();
+        File destDir = new File(baseDir, uniqueDirName);
+        if (!destDir.mkdirs()) {
+            throw new RuntimeException("文件上传失败: 创建解压文件夹失败");
+        }
+
+        try (ZipInputStream zipIn = new ZipInputStream(file.getInputStream())) {
+            ZipEntry entry = zipIn.getNextEntry();
+            byte[] buffer = new byte[4096];
+
+            while (entry != null) {
+                String entryPath = destDir.getAbsolutePath() + File.separator + entry.getName();
+                File entryFile = new File(entryPath);
+
+                // 防御路径遍历攻击
+                if (!entryFile.getCanonicalPath().startsWith(destDir.getCanonicalPath() + File.separator)) {
+                    throw new IOException("非法解压路径：" + entry.getName());
+                }
+
+                if (entry.isDirectory()) {
+                    entryFile.mkdirs();
+                } else {
+                    // 确保父目录存在
+                    File parentDir = entryFile.getParentFile();
+                    if (!parentDir.exists() && !parentDir.mkdirs()) {
+                        throw new IOException("无法创建父目录: " + parentDir.getAbsolutePath());
+                    }
+
+                    // 处理文件重名（同一ZIP内部）
+                    if (entryFile.exists()) {
+                        String fileName = getUniqueFileName(entryFile);
+                        entryPath = entryFile.getParent() + File.separator + fileName;
+                        entryFile = new File(entryPath);
+                    }
+
+                    // 写入文件
+                    try (FileOutputStream fos = new FileOutputStream(entryFile);
+                         BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+                        int len;
+                        while ((len = zipIn.read(buffer)) > 0) {
+                            bos.write(buffer, 0, len);
+                        }
+                    }
+                }
+                zipIn.closeEntry();
+                entry = zipIn.getNextEntry();
             }
         }
 
-        String originalFilename = file.getOriginalFilename();
-        String uniqueFileName = UUID.randomUUID() + "_" + originalFilename;
-        String filePath = uploadDir + uniqueFileName;
-
-        try {
-            file.transferTo(new File(filePath));
-        } catch (IOException e) {
-            throw new RuntimeException("文件上传失败: " + e.getMessage(), e);
-        }
-
-        return filePath;
+        // 返回唯一解压目录的绝对路径
+        return destDir.getAbsolutePath();
     }
 
+    /**
+     * 生成唯一文件名（解决同一ZIP内部文件重名问题）
+     */
+    private String getUniqueFileName(File file) {
+        String baseName = file.getName();
+        String parentDir = file.getParent();
+        String nameWithoutExt = baseName.replaceFirst("[.][^.]+$", "");
+        String extension = baseName.substring(nameWithoutExt.length());
 
+        int counter = 1;
+        while (file.exists()) {
+            String newName = nameWithoutExt + "_" + counter + extension;
+            file = new File(parentDir, newName);
+            counter++;
+        }
+        return file.getName();
+    }
+    
     public String getRiskLevel(int projectId,int riskThreshold) {
         QueryWrapper<ProjectVulnerability> wrapper = new QueryWrapper<>();
         wrapper.eq("project_id", projectId)

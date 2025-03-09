@@ -39,7 +39,7 @@ public class UserServiceImpl implements UserService {
 
         Map<String,Integer> map = new HashMap<>();
         map.put("companyId", user.getId());
-
+        map.put("companyName", user.getId());
         return map;
     }
 

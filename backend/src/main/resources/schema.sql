@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `project`
 CREATE TABLE IF NOT EXISTS `white_list`
 (
     `id`  int(11) NOT NULL AUTO_INCREMENT ,
-    `project_id` int(11) NOT NULL ,
+    `file_path`  varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
     `company_id` int(11) NOT NULL ,
     `language` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL  ,
     `description` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,

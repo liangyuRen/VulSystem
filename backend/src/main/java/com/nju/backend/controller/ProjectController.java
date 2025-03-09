@@ -32,9 +32,9 @@ public class ProjectController {
     }
 
     @PostMapping("/uploadFile")
-    public RespBean uploadFile(@RequestParam("file") MultipartFile file) {
+    public RespBean uploadFile(@RequestParam("file") MultipartFile file,@RequestParam("companyId") int companyId) {
         try {
-            return RespBean.success(projectService.uploadFile(file));
+            return RespBean.success(projectService.uploadFile(file,companyId));
         } catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
         }
@@ -53,9 +53,9 @@ public class ProjectController {
 
     //更新项目
     @PostMapping("/update")
-    public RespBean updateProject(@RequestParam("id") int id,@RequestParam("name") String name,@RequestParam("description") String description,@RequestParam("risk_threshold") int risk_threshold) {
+    public RespBean updateProject(@RequestParam("id") int id,@RequestParam("name") String name,@RequestParam("description") String description,@RequestParam("risk_threshold") int risk_threshold,@RequestParam(value = "filePath",required = false) String filePath) {
         try {
-            projectService.updateProject(id,name,description,risk_threshold);
+            projectService.updateProject(id,name,description,risk_threshold,filePath);
             return RespBean.success();
         } catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());

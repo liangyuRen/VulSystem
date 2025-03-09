@@ -10,6 +10,7 @@ import com.nju.backend.repository.mapper.*;
 import com.nju.backend.repository.po.*;
 import com.nju.backend.service.project.ProjectService;
 import com.nju.backend.service.project.util.ProjectUtil;
+import com.sun.xml.internal.bind.v2.TODO;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -21,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
@@ -88,15 +90,12 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         company.setProjectId(companyProjectId);
 
         companyMapper.updateById(company);
-
-        if ("java".equals(language)) {
-            ((ProjectService) applicationContext.getBean(ProjectService.class)).asyncParseJavaProject(project.getId(), filePath, companyId);        }
     }
 
     // 在创建方法中仅触发异步解析
     @Async("projectAnalysisExecutor")
     @Override
-    public void asyncParseJavaProject(int projectId, String filePath, int companyId) {
+    public void asyncParseJavaProject(int companyId, String filePath) {
         try {
             RestTemplate restTemplate = new RestTemplate();
             String url = UriComponentsBuilder.fromHttpUrl("http://localhost:5000/parse/pom_parse")
@@ -109,19 +108,21 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
             List<WhiteList>  whiteLists = projectUtil.parseJsonData(response);
             for(WhiteList whiteList:whiteLists){
                 whiteList.setCompany_id(companyId);
-                whiteList.setProject_id(projectId);
+                whiteList.setFilePath(filePath);
                 whiteList.setLanguage("java");
                 whiteList.setIsdelete(0);
                 whiteListMapper.insert(whiteList);
             }
         } catch (Exception e) {
-            log.println("Error parsing project " + projectId + ": " + e.getMessage());
+            log.println("Error parsing project " +filePath + ": " + e.getMessage());
         }
     }
 
     @Override
-    public String uploadFile(MultipartFile file) {
-        return projectUtil.saveFile(file);
+    public String uploadFile(MultipartFile file,Integer companyId) throws IOException {
+        String filePath = projectUtil.unzipAndSaveFile(file);
+        applicationContext.getBean(ProjectService.class).asyncParseJavaProject(companyId,filePath);
+        return filePath;
     }
 
     @Override
@@ -340,11 +341,11 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         }
         project.setIsDelete(1);
         projectMapper.updateById(project);
-        whiteListMapper.delete(new QueryWrapper<WhiteList>().eq("project_id", id));
     }
 
     @Override
-    public void updateProject(Integer id, String name, String description, int risk_threshold) {
+    public void updateProject(Integer id, String name, String description, int risk_threshold, String filePath) {
+
         Project project = projectMapper.selectById(id);
         if(project == null) {
             throw new RuntimeException("Project does not exist.");
@@ -352,7 +353,12 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         project.setName(name);
         project.setDescription(description);
         project.setRiskThreshold(risk_threshold);
+        if(filePath != null) {
+            project.setFile(filePath);
+        }
         projectMapper.updateById(project);
+
     }
+
 
 }

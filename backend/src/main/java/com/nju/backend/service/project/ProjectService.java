@@ -6,6 +6,7 @@ import com.nju.backend.config.vo.VulnerabilityVO;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -15,13 +16,13 @@ public interface ProjectService {
 
     void deleteProject(Integer id);
 
-    void updateProject(Integer id, String name, String description, int risk_threshold);
+    void updateProject(Integer id, String name, String description, int risk_threshold,String filePath);
 
     // 在创建方法中仅触发异步解析
     @Async("projectAnalysisExecutor")
-    void asyncParseJavaProject(int projectId, String filePath, int companyId);
+    void asyncParseJavaProject(int companyId,String filePath);
 
-    String uploadFile(MultipartFile file);
+    String uploadFile(MultipartFile file,Integer companyId) throws IOException;
 
     List<VulnerabilityVO> getVulnerabilities(int id);
 
