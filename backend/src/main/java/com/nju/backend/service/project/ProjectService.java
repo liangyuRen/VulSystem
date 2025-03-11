@@ -6,6 +6,7 @@ import com.nju.backend.config.vo.VulnerabilityVO;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -31,4 +32,6 @@ public interface ProjectService {
     Object getProjectStatistics(int companyId);
 
     ProjectVO getProjectInfo(int id);
+
+    File getProjectSBOM(int id,String type) throws IOException, InterruptedException;
 }

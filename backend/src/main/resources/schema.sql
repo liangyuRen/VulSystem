@@ -128,3 +128,15 @@ CREATE TABLE IF NOT EXISTS `vulnerability_report_vulnerability`
     DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
     AUTO_INCREMENT=1
     ;
+
+CREATE TABLE IF NOT EXISTS `SBOM`
+(
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `file_path` varchar(255) NOT NULL,
+    `project_id`int(11) NOT NULL,
+    PRIMARY KEY(`id`)
+)
+    ENGINE=InnoDB
+    DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
+    AUTO_INCREMENT=1
+;

@@ -4,8 +4,17 @@ import com.nju.backend.config.RespBean;
 import com.nju.backend.config.RespBeanEnum;
 import com.nju.backend.service.project.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.PathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 
 @RestController
 @RequestMapping("/project")
@@ -97,5 +106,27 @@ public class ProjectController {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
         }
     }
+
+    @GetMapping("/sbom")
+    public Object getSBOMFile(@RequestParam("projectId") int id, @RequestParam("type") String type) throws IOException {
+        try{
+
+            // 1. 获取 SBOM 文件
+            File sbomFile = projectService.getProjectSBOM(id, type); // 调用你的生成方法
+
+            // 2. 将 File 转换为 Resource（封装文件流）
+            Path filePath = sbomFile.toPath();
+            Resource resource = new PathResource(filePath);
+
+            // 3. 设置 HTTP 头（关键步骤）
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + sbomFile.getName() + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM) // 或根据类型指定（如 application/json）
+                    .body(resource);
+        }catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
 }

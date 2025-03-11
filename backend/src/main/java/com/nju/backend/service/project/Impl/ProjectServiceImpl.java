@@ -13,6 +13,7 @@ import com.nju.backend.service.project.util.ProjectUtil;
 import com.sun.xml.internal.bind.v2.TODO;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.scheduling.annotation.Async;
@@ -22,7 +23,11 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
@@ -50,6 +55,8 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
 
     @Autowired
     private VulnerabilityMapper vulnerabilityMapper;
+    @Autowired
+    private String getOpenscaToolPath;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -61,9 +68,9 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
 
     @Override
     @Transactional
-    public void createProject(String name, String description, String language, int risk_threshold, int companyId,String filePath) {
+    public void createProject(String name, String description, String language, int risk_threshold, int companyId, String filePath) {
         QueryWrapper<Project> queryWrapper = new QueryWrapper<>();
-        if(projectMapper.selectOne(queryWrapper.eq("name", name)) != null) {
+        if (projectMapper.selectOne(queryWrapper.eq("name", name)) != null) {
             throw new RuntimeException("Project already exists.");
         }
         Project project = new Project();
@@ -82,7 +89,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         if (company == null) {
             throw new RuntimeException("Company does not exist.");
         }
-        if(company.getProjectId() == null || company.getProjectId().isEmpty()) {
+        if (company.getProjectId() == null || company.getProjectId().isEmpty()) {
             company.setProjectId("{}");
         }
         String companyProjectId = company.getProjectId();
@@ -105,8 +112,8 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
                     .toUriString();
 
             String response = restTemplate.getForObject(url, String.class);
-            List<WhiteList>  whiteLists = projectUtil.parseJsonData(response);
-            for(WhiteList whiteList:whiteLists){
+            List<WhiteList> whiteLists = projectUtil.parseJsonData(response);
+            for (WhiteList whiteList : whiteLists) {
                 whiteList.setCompany_id(companyId);
                 whiteList.setFilePath(filePath);
                 whiteList.setLanguage("java");
@@ -114,14 +121,14 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
                 whiteListMapper.insert(whiteList);
             }
         } catch (Exception e) {
-            log.println("Error parsing project " +filePath + ": " + e.getMessage());
+            log.println("Error parsing project " + filePath + ": " + e.getMessage());
         }
     }
 
     @Override
-    public String uploadFile(MultipartFile file,Integer companyId) throws IOException {
+    public String uploadFile(MultipartFile file, Integer companyId) throws IOException {
         String filePath = projectUtil.unzipAndSaveFile(file);
-        applicationContext.getBean(ProjectService.class).asyncParseJavaProject(companyId,filePath);
+        applicationContext.getBean(ProjectService.class).asyncParseJavaProject(companyId, filePath);
         return filePath;
     }
 
@@ -155,7 +162,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     }
 
     @Override
-    public List<Map<String,String>> getProjectList(int companyId, int page, int size) throws JsonProcessingException {
+    public List<Map<String, String>> getProjectList(int companyId, int page, int size) throws JsonProcessingException {
         Company company = companyMapper.selectById(companyId);
         if (company == null) {
             throw new RuntimeException("Company does not exist.");
@@ -163,7 +170,8 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
 
         String projectJson = company.getProjectId();
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, String> projectMap = objectMapper.readValue(projectJson, new TypeReference<Map<String, String>>() {});
+        Map<String, String> projectMap = objectMapper.readValue(projectJson, new TypeReference<Map<String, String>>() {
+        });
 
         if (projectMap == null || projectMap.isEmpty()) {
             return Collections.emptyList();
@@ -186,7 +194,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
             map.put("id", String.valueOf(p.getId()));
             map.put("name", p.getName());
             map.put("description", p.getDescription());
-            map.put("risk_level", projectUtil.getRiskLevel(p.getId(),p.getRiskThreshold())); // 计算风险级别
+            map.put("risk_level", projectUtil.getRiskLevel(p.getId(), p.getRiskThreshold())); // 计算风险级别
             map.put("risk_threshold", String.valueOf(p.getRiskThreshold()));
             return map;
         }).collect(Collectors.toList());
@@ -204,9 +212,9 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         long vulnerabilityCount = 0;
         AtomicInteger cVulnerabilityCount = new AtomicInteger();
         AtomicInteger javaVulnerabilityCount = new AtomicInteger();
-        Map<String,Integer> highVulnerabilityNumByDay = new HashMap<>();
-        Map<String,Integer> midVulnerabilityNumByDay = new HashMap<>();
-        Map<String,Integer> lowVulnerabilityNumByDay = new HashMap<>();
+        Map<String, Integer> highVulnerabilityNumByDay = new HashMap<>();
+        Map<String, Integer> midVulnerabilityNumByDay = new HashMap<>();
+        Map<String, Integer> lowVulnerabilityNumByDay = new HashMap<>();
         int thirdLibraryCount;
 
         QueryWrapper<WhiteList> whiteListQueryWrapper = new QueryWrapper<>();
@@ -221,19 +229,20 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> projectMap = null;
         try {
-            projectMap = objectMapper.readValue(company.getProjectId(), new TypeReference<Map<String, String>>() {});
+            projectMap = objectMapper.readValue(company.getProjectId(), new TypeReference<Map<String, String>>() {
+            });
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
 
-        if(projectMap == null) {
+        if (projectMap == null) {
             projectCount = 0;
-        }else{
+        } else {
             projectCount = projectMap.size();
         }
 
 
-        if(projectMap!=null){
+        if (projectMap != null) {
             for (String projectId : projectMap.keySet()) {
                 Project project = projectMapper.selectById(Integer.parseInt(projectId));
                 if (project == null) {
@@ -260,7 +269,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
                             if (vulnerability == null) {
                                 return;
                             }
-                            if (vulnerability.getLanguage().equals("c")||vulnerability.getLanguage().equals("c++")) {
+                            if (vulnerability.getLanguage().equals("c") || vulnerability.getLanguage().equals("c++")) {
                                 cVulnerabilityCount.getAndIncrement();
                             } else if (vulnerability.getLanguage().equals("java")) {
                                 javaVulnerabilityCount.getAndIncrement();
@@ -319,12 +328,12 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     public ProjectVO getProjectInfo(int id) {
         Project project = projectMapper.selectById(id);
         ProjectVO projectVO = project.toVO();
-        projectVO.setHighRiskNum(projectUtil.getRiskNum(id,"High"));
-        projectVO.setMidRiskNum(projectUtil.getRiskNum(id,"Medium"));
-        projectVO.setLowRiskNum(projectUtil.getRiskNum(id,"Low"));
+        projectVO.setHighRiskNum(projectUtil.getRiskNum(id, "High"));
+        projectVO.setMidRiskNum(projectUtil.getRiskNum(id, "Medium"));
+        projectVO.setLowRiskNum(projectUtil.getRiskNum(id, "Low"));
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime todaySixAM = now.toLocalDate().atTime(LocalTime.of(6, 0));
-        LocalDateTime lastScanTime= now.isBefore(todaySixAM)
+        LocalDateTime lastScanTime = now.isBefore(todaySixAM)
                 ? todaySixAM.minusDays(1)
                 : todaySixAM;
 
@@ -336,7 +345,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     @Override
     public void deleteProject(Integer id) {
         Project project = projectMapper.selectById(id);
-        if(project == null) {
+        if (project == null) {
             throw new RuntimeException("Project does not exist.");
         }
         project.setIsDelete(1);
@@ -347,18 +356,53 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     public void updateProject(Integer id, String name, String description, int risk_threshold, String filePath) {
 
         Project project = projectMapper.selectById(id);
-        if(project == null) {
+        if (project == null) {
             throw new RuntimeException("Project does not exist.");
         }
         project.setName(name);
         project.setDescription(description);
         project.setRiskThreshold(risk_threshold);
-        if(filePath != null) {
+        if (filePath != null) {
             project.setFile(filePath);
         }
         projectMapper.updateById(project);
 
     }
 
+    @Override
+    public File getProjectSBOM(int id, String type) throws IOException, InterruptedException {
+        Project project = projectMapper.selectById(id);
+        if (project == null) {
+            throw new RuntimeException("Project does not exist.");
+        }
 
+        String projectDir = project.getFile();
+        String sbomFileName = "SBOM." + type.toLowerCase();
+        Path sbomFilePath = Paths.get(projectDir).resolve(sbomFileName); // 完整路径：/data/project/123/SBOM.json
+
+        if (Files.exists(sbomFilePath) && Files.isRegularFile(sbomFilePath)) {
+            return sbomFilePath.toFile(); // 直接返回已有文件
+        }
+
+        String[] command = {
+                "./opensca-cli",
+                "-path", projectDir,
+                "-out", sbomFilePath.toString(),
+        };
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.directory(new File(getOpenscaToolPath));
+        processBuilder.redirectErrorStream(true);
+
+        Process process = processBuilder.start();
+        int exitCode = process.waitFor();
+
+        if (exitCode != 0) {
+            throw new RuntimeException("OpenSCA 执行失败，退出码: " + exitCode);
+        } else if (!Files.exists(sbomFilePath)) { // 确保文件生成成功
+            throw new IOException("SBOM 文件生成失败，路径: " + sbomFilePath);
+        }
+
+        return sbomFilePath.toFile();
+    }
 }
