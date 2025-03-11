@@ -13,7 +13,6 @@ import com.nju.backend.service.project.util.ProjectUtil;
 import com.sun.xml.internal.bind.v2.TODO;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.scheduling.annotation.Async;
@@ -370,18 +369,18 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     }
 
     @Override
-    public File getProjectSBOM(int id, String type) throws IOException, InterruptedException {
+    public File getProjectSBOM(int id, String type,String outFileName) throws IOException, InterruptedException {
         Project project = projectMapper.selectById(id);
         if (project == null) {
             throw new RuntimeException("Project does not exist.");
         }
 
         String projectDir = project.getFile();
-        String sbomFileName = "SBOM." + type.toLowerCase();
-        Path sbomFilePath = Paths.get(projectDir).resolve(sbomFileName); // 完整路径：/data/project/123/SBOM.json
+        String sbomFileName = outFileName + type.toLowerCase();
+        Path sbomFilePath = Paths.get(projectDir).resolve(sbomFileName);
 
         if (Files.exists(sbomFilePath) && Files.isRegularFile(sbomFilePath)) {
-            return sbomFilePath.toFile(); // 直接返回已有文件
+            return sbomFilePath.toFile();
         }
 
         String[] command = {
@@ -399,7 +398,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
 
         if (exitCode != 0) {
             throw new RuntimeException("OpenSCA 执行失败，退出码: " + exitCode);
-        } else if (!Files.exists(sbomFilePath)) { // 确保文件生成成功
+        } else if (!Files.exists(sbomFilePath)) {
             throw new IOException("SBOM 文件生成失败，路径: " + sbomFilePath);
         }
 

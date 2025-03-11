@@ -33,5 +33,5 @@ public interface ProjectService {
 
     ProjectVO getProjectInfo(int id);
 
-    File getProjectSBOM(int id,String type) throws IOException, InterruptedException;
+    File getProjectSBOM(int id,String type,String outFileName) throws IOException, InterruptedException;
 }

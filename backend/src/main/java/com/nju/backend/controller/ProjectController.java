@@ -108,11 +108,11 @@ public class ProjectController {
     }
 
     @GetMapping("/sbom")
-    public Object getSBOMFile(@RequestParam("projectId") int id, @RequestParam("type") String type) throws IOException {
+    public Object getSBOMFile(@RequestParam("projectId") int id, @RequestParam("format") String format,@RequestParam("outFileName") String outFileName) throws IOException {
         try{
 
             // 1. 获取 SBOM 文件
-            File sbomFile = projectService.getProjectSBOM(id, type); // 调用你的生成方法
+            File sbomFile = projectService.getProjectSBOM(id, format,outFileName); // 调用你的生成方法
 
             // 2. 将 File 转换为 Resource（封装文件流）
             Path filePath = sbomFile.toPath();
