@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -169,6 +170,19 @@ public class ProjectUtil {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE", Locale.ENGLISH);
         LocalDateTime localDateTime = time.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
         return localDateTime.format(formatter).substring(0,3);
+    }
+
+    // 初始化最近七天的日期映射，键为星期几的前三个字母
+    public Map<String, Integer> initRecentSevenDaysMap() {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(6);
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = startDate.plusDays(i);
+            String dayOfWeek = date.format(DateTimeFormatter.ofPattern("EEE", Locale.ENGLISH));
+            map.put(dayOfWeek, 0);
+        }
+        return map;
     }
 
     public  List<WhiteList> parseJsonData(String jsonData) {

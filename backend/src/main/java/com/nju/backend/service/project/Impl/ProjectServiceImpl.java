@@ -211,20 +211,23 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         long vulnerabilityCount = 0;
         AtomicInteger cVulnerabilityCount = new AtomicInteger();
         AtomicInteger javaVulnerabilityCount = new AtomicInteger();
-        Map<String, Integer> highVulnerabilityNumByDay = new HashMap<>();
-        Map<String, Integer> midVulnerabilityNumByDay = new HashMap<>();
-        Map<String, Integer> lowVulnerabilityNumByDay = new HashMap<>();
+        Map<String, Integer> highVulnerabilityNumByDay = projectUtil.initRecentSevenDaysMap();
+        Map<String, Integer> midVulnerabilityNumByDay = projectUtil.initRecentSevenDaysMap();
+        Map<String, Integer> lowVulnerabilityNumByDay = projectUtil.initRecentSevenDaysMap();
         int thirdLibraryCount;
 
+        // 查询第三方库数量
         QueryWrapper<WhiteList> whiteListQueryWrapper = new QueryWrapper<>();
         whiteListQueryWrapper.eq("company_id", companyId);
         thirdLibraryCount = whiteListMapper.selectList(whiteListQueryWrapper).size();
 
+        // 检查公司是否存在
         Company company = companyMapper.selectById(companyId);
         if (company == null) {
             throw new RuntimeException("Company does not exist.");
         }
 
+        // 解析公司项目列表
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> projectMap = null;
         try {
@@ -234,12 +237,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
             e.printStackTrace();
         }
 
-        if (projectMap == null) {
-            projectCount = 0;
-        } else {
-            projectCount = projectMap.size();
-        }
-
+        projectCount = projectMap != null ? projectMap.size() : 0;
 
         if (projectMap != null) {
             for (String projectId : projectMap.keySet()) {
@@ -248,7 +246,9 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
                     throw new RuntimeException("Project does not exist.");
                 }
 
-                switch (projectUtil.getRiskLevel(project.getId(), project.getRiskThreshold())) {
+                // 统计项目风险等级
+                String riskLevel = projectUtil.getRiskLevel(project.getId(), project.getRiskThreshold());
+                switch (riskLevel) {
                     case "高风险":
                         highRiskCount++;
                         break;
@@ -260,67 +260,76 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
                         break;
                 }
 
+                // 统计漏洞总数
                 vulnerabilityCount += projectUtil.getVulnerabilityCount(project.getId());
 
-                projectVulnerabilityMapper.selectList(new QueryWrapper<ProjectVulnerability>().eq("project_id", project.getId()))
-                        .forEach(pv -> {
-                            Vulnerability vulnerability = vulnerabilityMapper.selectById(pv.getVulnerabilityId());
-                            if (vulnerability == null) {
-                                return;
-                            }
-                            if (vulnerability.getLanguage().equals("c") || vulnerability.getLanguage().equals("c++")) {
-                                cVulnerabilityCount.getAndIncrement();
-                            } else if (vulnerability.getLanguage().equals("java")) {
-                                javaVulnerabilityCount.getAndIncrement();
-                            }
+                // 处理每个漏洞
+                QueryWrapper<ProjectVulnerability> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("project_id", project.getId());
+                List<ProjectVulnerability> pvList = projectVulnerabilityMapper.selectList(queryWrapper);
+                pvList.forEach(pv -> {
+                    Vulnerability vulnerability = vulnerabilityMapper.selectById(pv.getVulnerabilityId());
+                    if (vulnerability == null) return;
 
-                            String dayOfWeek = projectUtil.timeToDayOfWeek(vulnerability.getTime());
-                            switch (vulnerability.getRiskLevel()) {
-                                case "High":
-                                    highVulnerabilityNumByDay.put(dayOfWeek, highVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
-                                    highRiskVulNum.getAndIncrement();
-                                    break;
-                                case "Medium":
-                                    midVulnerabilityNumByDay.put(dayOfWeek, midVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
-                                    mediumRiskVulNum.getAndIncrement();
-                                    break;
-                                case "Low":
-                                    lowVulnerabilityNumByDay.put(dayOfWeek, lowVulnerabilityNumByDay.getOrDefault(dayOfWeek, 0) + 1);
-                                    lowRiskVulNum.getAndIncrement();
-                                    break;
-                            }
-                        });
+                    // 按语言统计
+                    String lang = vulnerability.getLanguage();
+                    if ("c".equals(lang) || "c++".equals(lang)) {
+                        cVulnerabilityCount.incrementAndGet();
+                    } else if ("java".equals(lang)) {
+                        javaVulnerabilityCount.incrementAndGet();
+                    }
+
+                    // 转换为日期字符串并更新按天统计
+                    String vulnDateStr = projectUtil.timeToDayOfWeek(vulnerability.getTime());
+
+                    String VulRiskLevel = vulnerability.getRiskLevel();
+                    switch (VulRiskLevel) {
+                        case "High":
+                            updateVulnerabilityCount(vulnDateStr, highVulnerabilityNumByDay, highRiskVulNum);
+                            break;
+                        case "Medium":
+                            updateVulnerabilityCount(vulnDateStr, midVulnerabilityNumByDay, mediumRiskVulNum);
+                            break;
+                        case "Low":
+                            updateVulnerabilityCount(vulnDateStr, lowVulnerabilityNumByDay, lowRiskVulNum);
+                            break;
+                    }
+                });
             }
         }
 
-        String highVulByDay;
-        String midVulByDay;
-        String lowVulByDay;
+        // 序列化按天统计结果
+        Map<String, Object> result = new HashMap<>();
         try {
-            highVulByDay = objectMapper.writeValueAsString(highVulnerabilityNumByDay);
-            midVulByDay = objectMapper.writeValueAsString(midVulnerabilityNumByDay);
-            lowVulByDay = objectMapper.writeValueAsString(lowVulnerabilityNumByDay);
+            result.put("highVulnerabilityNumByDay", objectMapper.writeValueAsString(highVulnerabilityNumByDay));
+            result.put("midVulnerabilityNumByDay", objectMapper.writeValueAsString(midVulnerabilityNumByDay));
+            result.put("lowVulnerabilityNumByDay", objectMapper.writeValueAsString(lowVulnerabilityNumByDay));
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error serializing vulnerability count", e);
+            throw new RuntimeException("Error serializing vulnerability data", e);
         }
 
-        Map<String, Object> result = new HashMap<>();
+        // 填充其他统计结果
         result.put("highRiskNum", highRiskCount);
         result.put("lowRiskNum", lowRiskCount);
         result.put("noRiskNum", noRiskCount);
         result.put("projectNum", projectCount);
         result.put("thirdLibraryNum", thirdLibraryCount);
         result.put("vulnerabilityNum", vulnerabilityCount);
-        result.put("highVulnerabilityNumByDay", highVulByDay);
-        result.put("midVulnerabilityNumByDay", midVulByDay);
-        result.put("lowVulnerabilityNumByDay", lowVulByDay);
-        result.put("cVulnerabilityNum", cVulnerabilityCount);
-        result.put("javaVulnerabilityNum", javaVulnerabilityCount);
-        result.put("lowRiskVulnerabilityNum", lowRiskVulNum);
-        result.put("highRiskVulnerabilityNum", highRiskVulNum);
-        result.put("midRiskVulnerabilityNum", mediumRiskVulNum);
+        result.put("cVulnerabilityNum", cVulnerabilityCount.get());
+        result.put("javaVulnerabilityNum", javaVulnerabilityCount.get());
+        result.put("lowRiskVulnerabilityNum", lowRiskVulNum.get());
+        result.put("highRiskVulnerabilityNum", highRiskVulNum.get());
+        result.put("midRiskVulnerabilityNum", mediumRiskVulNum.get());
 
         return result;
+    }
+
+    // 更新指定日期和风险等级的统计
+    private void updateVulnerabilityCount(String dateStr, Map<String, Integer> vulnMap, AtomicInteger counter) {
+        if (vulnMap.containsKey(dateStr)) {
+            vulnMap.put(dateStr, vulnMap.get(dateStr) + 1);
+        }
+        counter.incrementAndGet();
     }
 
     @Override
@@ -369,7 +378,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     }
 
     @Override
-    public File getProjectSBOM(int id, String type,String outFileName) throws IOException, InterruptedException {
+    public File getProjectSBOM(int id, String type, String outFileName) throws IOException, InterruptedException {
         Project project = projectMapper.selectById(id);
         if (project == null) {
             throw new RuntimeException("Project does not exist.");
