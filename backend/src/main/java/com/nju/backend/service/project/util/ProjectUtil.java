@@ -158,7 +158,6 @@ public class ProjectUtil {
         return riskNum.get();
     }
 
-
     public long getVulnerabilityCount(int projectId) {
         QueryWrapper<ProjectVulnerability> wrapper = new QueryWrapper<>();
         wrapper.eq("project_id", projectId)
@@ -196,4 +195,41 @@ public class ProjectUtil {
         }
     }
 
+    public String detectProjectType(String projectPath) throws IOException {
+        Path path = Paths.get(projectPath);
+        if (!Files.isDirectory(path)) {
+            throw new IllegalArgumentException("Invalid project directory");
+        }
+
+        final boolean[] hasJava = {false};
+        final boolean[] hasC = {false};
+
+        // 限制递归深度为3层（根目录+2级子目录）
+        try (Stream<Path> stream = Files.walk(path, 3)) {
+            stream.forEach(file -> {
+                String fileName = file.getFileName().toString().toLowerCase();
+
+                // 检测Java特征
+                if (fileName.equals("pom.xml")
+                        || fileName.equals("build.gradle")
+                        || fileName.endsWith(".java")) {
+                    hasJava[0] = true;
+                }
+
+                // 检测C特征
+                if (fileName.equals("makefile")
+                        || fileName.equals("cmakelists.txt")
+                        || fileName.endsWith(".c")
+                        || fileName.endsWith(".h")) {
+                    hasC[0] = true;
+                }
+            });
+        }
+
+        // 决策逻辑：Java特征优先
+        if (hasJava[0] && hasC[0]) return "java"; // 同时存在时优先返回Java
+        if (hasJava[0]) return "java";
+        if (hasC[0]) return "c";
+        return "unknown";
+    }
 }

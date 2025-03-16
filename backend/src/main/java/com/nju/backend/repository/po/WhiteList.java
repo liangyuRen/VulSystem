@@ -18,8 +18,6 @@ public class WhiteList {
 
     private String language;
 
-    private int company_id;
-
     private int isdelete;
 
 }

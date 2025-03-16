@@ -41,9 +41,9 @@ public class ProjectController {
     }
 
     @PostMapping("/uploadFile")
-    public RespBean uploadFile(@RequestParam("file") MultipartFile file,@RequestParam("companyId") int companyId) {
+    public RespBean uploadFile(@RequestParam("file") MultipartFile file) {
         try {
-            return RespBean.success(projectService.uploadFile(file,companyId));
+            return RespBean.success(projectService.uploadFile(file));
         } catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
         }

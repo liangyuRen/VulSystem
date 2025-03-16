@@ -10,7 +10,6 @@ import com.nju.backend.repository.mapper.*;
 import com.nju.backend.repository.po.*;
 import com.nju.backend.service.project.ProjectService;
 import com.nju.backend.service.project.util.ProjectUtil;
-import com.sun.xml.internal.bind.v2.TODO;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -98,10 +97,9 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         companyMapper.updateById(company);
     }
 
-    // 在创建方法中仅触发异步解析
     @Async("projectAnalysisExecutor")
     @Override
-    public void asyncParseJavaProject(int companyId, String filePath) {
+    public void asyncParseJavaProject(String filePath) {
         try {
             RestTemplate restTemplate = new RestTemplate();
             String url = UriComponentsBuilder.fromHttpUrl("http://localhost:5000/parse/pom_parse")
@@ -113,7 +111,6 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
             String response = restTemplate.getForObject(url, String.class);
             List<WhiteList> whiteLists = projectUtil.parseJsonData(response);
             for (WhiteList whiteList : whiteLists) {
-                whiteList.setCompany_id(companyId);
                 whiteList.setFilePath(filePath);
                 whiteList.setLanguage("java");
                 whiteList.setIsdelete(0);
@@ -124,10 +121,38 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         }
     }
 
+    @Async("projectAnalysisExecutor")
     @Override
-    public String uploadFile(MultipartFile file, Integer companyId) throws IOException {
+    public void asyncParseCProject(String filePath){
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            String url = UriComponentsBuilder.fromHttpUrl("http://localhost:5000/parse/c_parse")
+                    .queryParam("project_folder", filePath)
+                    .encode() // 自动处理 URL 编码
+                    .build()
+                    .toUriString();
+
+            String response = restTemplate.getForObject(url, String.class);
+            List<WhiteList> whiteLists = projectUtil.parseJsonData(response);
+            for (WhiteList whiteList : whiteLists) {
+                whiteList.setFilePath(filePath);
+                whiteList.setLanguage("c/c++");
+                whiteList.setIsdelete(0);
+                whiteListMapper.insert(whiteList);
+            }
+        } catch (Exception e) {
+            log.println("Error parsing project " + filePath + ": " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String uploadFile(MultipartFile file) throws IOException {
         String filePath = projectUtil.unzipAndSaveFile(file);
-        applicationContext.getBean(ProjectService.class).asyncParseJavaProject(companyId, filePath);
+        if(projectUtil.detectProjectType(filePath).equals("java")) {
+            applicationContext.getBean(ProjectService.class).asyncParseJavaProject(filePath);
+        }else if(projectUtil.detectProjectType(filePath).equals("c")) {
+            applicationContext.getBean(ProjectService.class).asyncParseCProject(filePath);
+        }
         return filePath;
     }
 
@@ -214,12 +239,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         Map<String, Integer> highVulnerabilityNumByDay = projectUtil.initRecentSevenDaysMap();
         Map<String, Integer> midVulnerabilityNumByDay = projectUtil.initRecentSevenDaysMap();
         Map<String, Integer> lowVulnerabilityNumByDay = projectUtil.initRecentSevenDaysMap();
-        int thirdLibraryCount;
-
-        // 查询第三方库数量
-        QueryWrapper<WhiteList> whiteListQueryWrapper = new QueryWrapper<>();
-        whiteListQueryWrapper.eq("company_id", companyId);
-        thirdLibraryCount = whiteListMapper.selectList(whiteListQueryWrapper).size();
+        int thirdLibraryCount = 0;
 
         // 检查公司是否存在
         Company company = companyMapper.selectById(companyId);
@@ -245,6 +265,11 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
                 if (project == null) {
                     throw new RuntimeException("Project does not exist.");
                 }
+
+                String filePath = project.getFile();
+                QueryWrapper<WhiteList> whiteListQueryWrapper = new QueryWrapper<>();
+                whiteListQueryWrapper.eq("file_path", filePath);
+                thirdLibraryCount += whiteListMapper.selectList(whiteListQueryWrapper).size();
 
                 // 统计项目风险等级
                 String riskLevel = projectUtil.getRiskLevel(project.getId(), project.getRiskThreshold());

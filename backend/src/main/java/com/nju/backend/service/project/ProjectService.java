@@ -19,11 +19,13 @@ public interface ProjectService {
 
     void updateProject(Integer id, String name, String description, int risk_threshold,String filePath);
 
-    // 在创建方法中仅触发异步解析
     @Async("projectAnalysisExecutor")
-    void asyncParseJavaProject(int companyId,String filePath);
+    void asyncParseJavaProject(String filePath);
 
-    String uploadFile(MultipartFile file,Integer companyId) throws IOException;
+    @Async("projectAnalysisExecutor")
+    void asyncParseCProject(String filePath);
+
+    String uploadFile(MultipartFile file) throws IOException;
 
     List<VulnerabilityVO> getVulnerabilities(int id);
 
