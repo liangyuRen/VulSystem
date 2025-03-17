@@ -31,6 +31,27 @@ public class User implements Serializable {
     @TableField("company_name")
     private String companyName;
 
+    @TableField("company_id")
+    private Integer companyId;
+
+    @TableField("user_name")
+    private String userName;
+
+    @TableField("phone")
+    private String phone;
+
+    @TableField("email")
+    private String email;
+
+    @TableField("role")
+    private String role;
+
+    @TableField("team")
+    private String team;
+
+    @TableField("isvip")
+    private Integer isVip;
+
     /**
      * 用户密码
      **/

@@ -2,10 +2,13 @@ package com.nju.backend.service.user.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nju.backend.config.JwtUtil;
+import com.nju.backend.config.vo.UserVO;
 import com.nju.backend.repository.mapper.UserMapper;
 import com.nju.backend.repository.po.User;
 import com.nju.backend.service.user.UserService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +26,7 @@ public class UserServiceImpl implements UserService {
     PasswordEncoder passwordEncoder;
 
     @Override
-    public Map<String,Integer> login(String companyName, String password) {
+    public UserVO login(String companyName, String password) {
         String encodedPassword = passwordEncoder.encode(companyName);
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -37,10 +40,17 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("密码错误");
         }
 
-        Map<String,Integer> map = new HashMap<>();
-        map.put("companyId", user.getId());
-        map.put("companyName", user.getId());
-        return map;
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+
+        return userVO;
+    }
+
+    @Override
+    public void register(User user) {
+        String encodedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encodedPassword);
+        userMapper.insert(user);
     }
 
 }

@@ -4,7 +4,12 @@ CREATE TABLE IF NOT EXISTS `user`
 (
     `id` INT(11) NOT NULL AUTO_INCREMENT COMMENT '用户ID',
     `email` VARCHAR(255) NOT NULL COMMENT '用户邮箱',
+    `phone` VARCHAR(255) NOT NULL COMMENT '联系电话',
     `company_name` VARCHAR(255) NOT NULL COMMENT '公司名称',
+    `user_name` VARCHAR(255) NOT NULL COMMENT '公司名称',
+    `role` VARCHAR(255) NOT NULL COMMENT '职位',
+    `team` VARCHAR(255) NOT NULL COMMENT '所属团队',
+    `isvip` TINYINT(1) NOT NULL COMMENT '是否是vip',
     `company_id` INT(11) NOT NULL COMMENT '公司ID',
     `password` VARCHAR(255) NOT NULL COMMENT '用户密码',
     `confirm_code` VARCHAR(255) DEFAULT NULL COMMENT '邮箱注册唯一认证UUID',
@@ -127,15 +132,3 @@ CREATE TABLE IF NOT EXISTS `vulnerability_report_vulnerability`
     DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
     AUTO_INCREMENT=1
     ;
-
-CREATE TABLE IF NOT EXISTS `SBOM`
-(
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `file_path` varchar(255) NOT NULL,
-    `project_id`int(11) NOT NULL,
-    PRIMARY KEY(`id`)
-)
-    ENGINE=InnoDB
-    DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
-    AUTO_INCREMENT=1
-;
