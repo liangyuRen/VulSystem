@@ -4,9 +4,7 @@ import com.nju.backend.config.RespBean;
 import com.nju.backend.config.RespBeanEnum;
 import com.nju.backend.service.user.impl.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -17,7 +15,7 @@ public class UserController {
     @Autowired
     UserServiceImpl userService;
 
-    @RequestMapping("/login")
+    @GetMapping("/login")
     public RespBean login(@RequestParam("companyName") String companyName,
                           @RequestParam("password") String password) {
         try {

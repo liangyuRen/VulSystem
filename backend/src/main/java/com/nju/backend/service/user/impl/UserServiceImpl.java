@@ -27,7 +27,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserVO login(String companyName, String password) {
-        String encodedPassword = passwordEncoder.encode(companyName);
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("company_name", companyName);
