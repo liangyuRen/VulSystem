@@ -100,6 +100,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     @Async("projectAnalysisExecutor")
     @Override
     public void asyncParseJavaProject(String filePath) {
+        System.out.println("开始解析Java项目: " + filePath);
         try {
             RestTemplate restTemplate = new RestTemplate();
             String url = UriComponentsBuilder.fromHttpUrl("http://localhost:5000/parse/pom_parse")
@@ -108,22 +109,48 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
                     .build()
                     .toUriString();
 
+            System.out.println("调用POM解析API: " + url);
             String response = restTemplate.getForObject(url, String.class);
+
+            if (response == null || response.trim().isEmpty()) {
+                System.err.println("POM解析API返回空响应，项目路径: " + filePath);
+                return;
+            }
+
+            // 检查是否返回了错误页面
+            if (response.contains("<!doctype html>") || response.contains("<html")) {
+                System.err.println("POM解析API返回错误页面，项目路径: " + filePath);
+                System.err.println("错误详情: " + response.substring(0, Math.min(500, response.length())));
+                return;
+            }
+
+            System.out.println("POM解析响应长度: " + response.length());
+            System.out.println("POM解析响应内容: " + response.substring(0, Math.min(200, response.length())) + "...");
+
             List<WhiteList> whiteLists = projectUtil.parseJsonData(response);
+            System.out.println("解析出依赖库数量: " + whiteLists.size());
+
+            int insertCount = 0;
             for (WhiteList whiteList : whiteLists) {
                 whiteList.setFilePath(filePath);
                 whiteList.setLanguage("java");
                 whiteList.setIsdelete(0);
-                whiteListMapper.insert(whiteList);
+                int result = whiteListMapper.insert(whiteList);
+                if (result > 0) {
+                    insertCount++;
+                }
             }
+            System.out.println("成功插入依赖库数量: " + insertCount);
         } catch (Exception e) {
-            log.println("Error parsing project " + filePath + ": " + e.getMessage());
+            System.err.println("解析Java项目失败，路径: " + filePath + "，错误: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     @Async("projectAnalysisExecutor")
     @Override
     public void asyncParseCProject(String filePath){
+        System.out.println("开始解析C/C++项目: " + filePath);
         try {
             RestTemplate restTemplate = new RestTemplate();
             String url = UriComponentsBuilder.fromHttpUrl("http://localhost:5000/parse/c_parse")
@@ -132,27 +159,62 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
                     .build()
                     .toUriString();
 
+            System.out.println("调用C项目解析API: " + url);
             String response = restTemplate.getForObject(url, String.class);
+
+            if (response == null || response.trim().isEmpty()) {
+                System.err.println("C项目解析API返回空响应，项目路径: " + filePath);
+                return;
+            }
+
+            // 检查是否返回了错误页面
+            if (response.contains("<!doctype html>") || response.contains("<html")) {
+                System.err.println("C项目解析API返回错误页面，项目路径: " + filePath);
+                System.err.println("错误详情: " + response.substring(0, Math.min(500, response.length())));
+                return;
+            }
+
+            System.out.println("C项目解析响应长度: " + response.length());
+            System.out.println("C项目解析响应内容: " + response.substring(0, Math.min(200, response.length())) + "...");
+
             List<WhiteList> whiteLists = projectUtil.parseJsonData(response);
+            System.out.println("解析出依赖库数量: " + whiteLists.size());
+
+            int insertCount = 0;
             for (WhiteList whiteList : whiteLists) {
                 whiteList.setFilePath(filePath);
                 whiteList.setLanguage("c/c++");
                 whiteList.setIsdelete(0);
-                whiteListMapper.insert(whiteList);
+                int result = whiteListMapper.insert(whiteList);
+                if (result > 0) {
+                    insertCount++;
+                }
             }
+            System.out.println("成功插入C依赖库数量: " + insertCount);
         } catch (Exception e) {
-            log.println("Error parsing project " + filePath + ": " + e.getMessage());
+            System.err.println("解析C/C++项目失败，路径: " + filePath + "，错误: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     @Override
     public String uploadFile(MultipartFile file) throws IOException {
         String filePath = projectUtil.unzipAndSaveFile(file);
-        if(projectUtil.detectProjectType(filePath).equals("java")) {
+        System.out.println("文件解压完成，路径: " + filePath);
+
+        String projectType = projectUtil.detectProjectType(filePath);
+        System.out.println("检测到项目类型: " + projectType);
+
+        if(projectType.equals("java")) {
+            System.out.println("启动Java项目解析任务");
             applicationContext.getBean(ProjectService.class).asyncParseJavaProject(filePath);
-        }else if(projectUtil.detectProjectType(filePath).equals("c")) {
+        } else if(projectType.equals("c")) {
+            System.out.println("启动C/C++项目解析任务");
             applicationContext.getBean(ProjectService.class).asyncParseCProject(filePath);
+        } else {
+            System.out.println("未知项目类型，跳过解析: " + projectType);
         }
+
         return filePath;
     }
 
