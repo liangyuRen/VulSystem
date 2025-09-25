@@ -132,3 +132,5 @@ CREATE TABLE IF NOT EXISTS `vulnerability_report_vulnerability`
     DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
     AUTO_INCREMENT=1
     ;
+
+

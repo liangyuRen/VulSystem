@@ -19,7 +19,7 @@ public class UserTest {
     @Test
     public void test() {
         User user = new User();
-        user.setId(1);
+        user.setId(2);
         user.setCompanyId(0);
         user.setEmail("test@test.com");
         user.setUserName("testUser");
