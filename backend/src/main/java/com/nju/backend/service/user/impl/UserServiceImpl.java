@@ -52,4 +52,18 @@ public class UserServiceImpl implements UserService {
         userMapper.insert(user);
     }
 
+    public UserVO getinfo(String userName) {
+
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("company_name", userName);
+        User user = userMapper.selectOne(queryWrapper);
+
+        if(user == null) {
+            throw new RuntimeException("用户名不存在");
+        }
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+        return userVO;
+    }
+
 }
