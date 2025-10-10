@@ -19,29 +19,28 @@ public class UserController {
     UserServiceImpl userService;
 
     @GetMapping("/login")
-    public RespBean login(@RequestParam("companyName") String companyName,
+    public RespBean login(@RequestParam("username") String username,
                           @RequestParam("password") String password) {
         try {
-            return RespBean.success(userService.login(companyName, password));
+            return RespBean.success(userService.login(username, password));
         }catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR,"用户名或密码错误");
         }
     }
-    //注册     username: info.username,
-    //      email: info.email,
-    //      password: info.password
+
     @PostMapping("/register")
     public RespBean register(
             @RequestParam("username") String name,
             @RequestParam("email") String email,
-            @RequestParam("password") String password) {
+            @RequestParam("password") String password,
+    @RequestParam("phone") String phone){
         try {
             User user=new User();
             user.setPassword(password);
-            user.setCompanyName(name);
+            user.setCompanyName("company");
             user.setUserName(name);
             user.setEmail(email);
-            user.setPhone("0000000");
+            user.setPhone(phone);
             user.setRole("user");
             user.setIsVip(0);
             user.setCompanyId(1);

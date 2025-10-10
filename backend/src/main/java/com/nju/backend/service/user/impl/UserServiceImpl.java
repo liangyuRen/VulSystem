@@ -26,10 +26,10 @@ public class UserServiceImpl implements UserService {
     PasswordEncoder passwordEncoder;
 
     @Override
-    public UserVO login(String companyName, String password) {
+    public UserVO login(String username, String password) {
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("company_name", companyName);
+        queryWrapper.eq("user_name", username);
         User user = userMapper.selectOne(queryWrapper);
 
         if(user == null) {
@@ -55,7 +55,7 @@ public class UserServiceImpl implements UserService {
     public UserVO getinfo(String userName) {
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("company_name", userName);
+        queryWrapper.eq("user_name", userName);
         User user = userMapper.selectOne(queryWrapper);
 
         if(user == null) {
