@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Docker & Environment ###
+.env
+.env.local
+.env.*.local
+*.env
+
+### Logs ###
+logs/
+*.log

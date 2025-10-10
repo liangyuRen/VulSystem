@@ -1,0 +1,23 @@
+# Docker & Environment files
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Docker volumes data
+data/mysql/
+data/uploads/

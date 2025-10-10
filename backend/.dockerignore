@@ -1,0 +1,59 @@
+# Maven build outputs
+target/
+!target/*.jar
+
+# Maven wrapper (we'll use it in Docker)
+# .mvn/
+# mvnw
+# mvnw.cmd
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Test files
+src/test/
+
+# Documentation
+README.md
+*.md
+
+# Data directories (if they contain local data)
+data/local/

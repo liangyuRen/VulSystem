@@ -1,0 +1,12 @@
+{
+  "task_info": {
+    "tool_version": "v3.0.8",
+    "app_name": "test",
+    "size": 0,
+    "start_time": "2025-09-30 10:48:43",
+    "end_time": "2025-09-30 10:48:43",
+    "cost_time": 0.0068909,
+    "error": "CreateFile test: The system cannot find the file specified.\nnot config vuln database origin"
+  },
+  "id": "57645482764271616"
+}
