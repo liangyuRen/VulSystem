@@ -266,7 +266,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         List<Project> projects = new ArrayList<>();
         for (String projectId : projectMap.keySet()) {
             Project project = projectMapper.selectById(Integer.parseInt(projectId));
-            if (project != null) {
+            if (project != null&&project.getIsDelete()==0) {
                 projects.add(project);
             }
         }
@@ -319,14 +319,19 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
             e.printStackTrace();
         }
 
-        projectCount = projectMap != null ? projectMap.size() : 0;
-
+        //projectCount = projectMap != null ? projectMap.size() : 0;
+        projectCount =0;
         if (projectMap != null) {
             for (String projectId : projectMap.keySet()) {
                 Project project = projectMapper.selectById(Integer.parseInt(projectId));
                 if (project == null) {
                     throw new RuntimeException("Project does not exist.");
                 }
+                if(project.getIsDelete()==1)
+                {
+                    continue;
+                }
+                projectCount++;
 
                 String filePath = project.getFile();
                 QueryWrapper<WhiteList> whiteListQueryWrapper = new QueryWrapper<>();
@@ -516,10 +521,10 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         // 检查不同可能的OpenSCA文件名
         File openscaExe = null;
         String[] possibleNames = {
-            "opensca-cli-3.0.8-installer.exe",
-            "opensca-cli.exe",
-            "opensca.exe",
-            "opensca-cli-3.0.8.exe"
+                "opensca-cli-3.0.8-installer.exe",
+                "opensca-cli.exe",
+                "opensca.exe",
+                "opensca-cli-3.0.8.exe"
         };
 
         for (String name : possibleNames) {
@@ -546,9 +551,9 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
 
         // 构建命令
         String[] command = new String[]{
-            openscaExe.getAbsolutePath(), // 使用完整路径
-            "-path", projectDir,
-            "-out", sbomFilePath.toString()
+                openscaExe.getAbsolutePath(), // 使用完整路径
+                "-path", projectDir,
+                "-out", sbomFilePath.toString()
         };
 
         // 根据格式添加format参数（如果需要）
