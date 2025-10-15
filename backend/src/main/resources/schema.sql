@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `vulnerability_report`
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `cve_id` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `description` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `vulnerability_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `vulnerability_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL COMMENT '受影响的依赖库名称列表(分号分隔)',
     `disclosure_time` datetime NOT NULL,
     `riskLevel` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
     `referenceLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
