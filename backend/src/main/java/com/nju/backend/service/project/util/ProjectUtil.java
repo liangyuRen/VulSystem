@@ -537,6 +537,23 @@ public class ProjectUtil {
         return "";
     }
 
+    public static String mapToJson(Map<String, Double> map) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{");
+    int i = 0;
+    for (Map.Entry<String, Double> entry : map.entrySet()) {
+        sb.append("\"").append(entry.getKey()).append("\":");
+        Double value = entry.getValue();
+        sb.append(String.format("%.2f", value));
+        if (i < map.size() - 1) {
+            sb.append(",");
+        }
+        i++;
+    }
+    sb.append("}");
+    return sb.toString();
+}
+
     public String detectProjectType(String projectPath) throws IOException {
         Path path = Paths.get(projectPath);
         System.out.println("DEBUG: 检测项目类型，路径: " + projectPath);

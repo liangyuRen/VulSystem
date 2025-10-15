@@ -206,7 +206,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         System.out.println("文件解压完成，路径: " + filePath);
         String projectType = "";
         
-        Map<String, Double> languagePercent = projectUtil.calcLanguagePercentByFileSize(filePath);
+        Map<String, Double> languagePercent = ProjectUtil.calcLanguagePercentByFileSize(filePath);
         if (languagePercent.size() == 2) {
             for (Map.Entry<String, Double> entry : languagePercent.entrySet()) {
                 if (!entry.getKey().equals("Other")) {
@@ -214,6 +214,8 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
                     break;
                 }
             }
+        }else {
+            projectType = ProjectUtil.mapToJson(languagePercent);
         }
 
         if(projectType.equals("java")) {
