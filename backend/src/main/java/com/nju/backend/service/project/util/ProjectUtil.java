@@ -488,6 +488,55 @@ public class ProjectUtil {
         }
     }
 
+    public static Map<String, Double> calcLanguagePercentByFileSize(String projectPath) {
+    // 常见语言扩展名映射
+    Map<String, String> EXT_LANG_MAP = new HashMap<>();
+    EXT_LANG_MAP.put("java", "Java");
+    EXT_LANG_MAP.put("c", "C");
+    EXT_LANG_MAP.put("cpp", "C++");
+    EXT_LANG_MAP.put("h", "C/C++头文件");
+    EXT_LANG_MAP.put("py", "Python");
+    EXT_LANG_MAP.put("js", "JavaScript");
+    EXT_LANG_MAP.put("ts", "TypeScript");
+
+    String[] ignoreExts = {"class", "o", "exe"};
+
+    Map<String, Long> langSize = new HashMap<>();
+    long total = countFileSize(new File(projectPath), langSize, EXT_LANG_MAP, ignoreExts);
+
+    Map<String, Double> percent = new HashMap<>();
+    for (Map.Entry<String, Long> entry : langSize.entrySet()) {
+        percent.put(entry.getKey(), entry.getValue() * 100.0 / total);
+    }
+    return percent;
+    }
+
+    private static long countFileSize(File dir, Map<String, Long> langSize, Map<String, String> extLangMap, String... ignoreExts) {
+        long total = 0;
+        File[] files = dir.listFiles();
+        if (files == null) return 0;
+        for (File file : files) {
+            if (file.isDirectory()) {
+                total += countFileSize(file, langSize, extLangMap, ignoreExts);
+            } else {
+                String ext = getFileExt(file.getName());
+                if (Arrays.asList(ignoreExts).contains(ext)) continue;
+                String lang = extLangMap.getOrDefault(ext, "Other");
+                long size = file.length();
+                langSize.put(lang, langSize.getOrDefault(lang, 0L) + size);
+                total += size;
+            }
+        }
+        return total;
+    }
+    private static String getFileExt(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
+            return fileName.substring(dotIndex + 1).toLowerCase();
+        }
+        return "";
+    }
+
     public String detectProjectType(String projectPath) throws IOException {
         Path path = Paths.get(projectPath);
         System.out.println("DEBUG: 检测项目类型，路径: " + projectPath);

@@ -21,11 +21,14 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
@@ -201,9 +204,17 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     public String uploadFile(MultipartFile file) throws IOException {
         String filePath = projectUtil.unzipAndSaveFile(file);
         System.out.println("文件解压完成，路径: " + filePath);
-
-        String projectType = projectUtil.detectProjectType(filePath);
-        System.out.println("检测到项目类型: " + projectType);
+        String projectType = "";
+        
+        Map<String, Double> languagePercent = projectUtil.calcLanguagePercentByFileSize(filePath);
+        if (languagePercent.size() == 2) {
+            for (Map.Entry<String, Double> entry : languagePercent.entrySet()) {
+                if (!entry.getKey().equals("Other")) {
+                    projectType = entry.getKey();
+                    break;
+                }
+            }
+        }
 
         if(projectType.equals("java")) {
             System.out.println("启动Java项目解析任务");
@@ -586,8 +597,8 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
 
             // 读取进程输出
             StringBuilder output = new StringBuilder();
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(process.getInputStream()))) {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     output.append(line).append("\n");
@@ -660,10 +671,10 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         json.append("{\n");
         json.append("  \"bomFormat\": \"CycloneDX\",\n");
         json.append("  \"specVersion\": \"1.4\",\n");
-        json.append("  \"serialNumber\": \"urn:uuid:").append(java.util.UUID.randomUUID()).append("\",\n");
+        json.append("  \"serialNumber\": \"urn:uuid:").append(UUID.randomUUID()).append("\",\n");
         json.append("  \"version\": 1,\n");
         json.append("  \"metadata\": {\n");
-        json.append("    \"timestamp\": \"").append(java.time.Instant.now()).append("\",\n");
+        json.append("    \"timestamp\": \"").append(Instant.now()).append("\",\n");
         json.append("    \"component\": {\n");
         json.append("      \"type\": \"application\",\n");
         json.append("      \"name\": \"").append(escapeJson(project.getName())).append("\",\n");
@@ -701,7 +712,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         xml.append("<bom xmlns=\"http://cyclonedx.org/schema/bom/1.4\" version=\"1\">\n");
         xml.append("  <metadata>\n");
-        xml.append("    <timestamp>").append(java.time.Instant.now()).append("</timestamp>\n");
+        xml.append("    <timestamp>").append(Instant.now()).append("</timestamp>\n");
         xml.append("    <component type=\"application\">\n");
         xml.append("      <name>").append(escapeXml(project.getName())).append("</name>\n");
         xml.append("      <version>1.0.0</version>\n");
