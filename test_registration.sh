@@ -3,7 +3,7 @@
 # 用户注册和登录测试脚本
 # 用于测试修复后的用户注册和登录功能
 
-BASE_URL="http://localhost:8080"
+BASE_URL="http://localhost:8081"
 USER_NAME="testuser123"
 EMAIL="testuser123@example.com"
 PASSWORD="testpass123"

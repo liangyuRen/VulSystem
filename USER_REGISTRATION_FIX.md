@@ -180,7 +180,7 @@ public RespBean register(
 ### 测试场景 1：新用户正常注册
 
 ```bash
-curl -X POST http://localhost:8080/user/register \
+curl -X POST http://localhost:8081/user/register \
   -d "username=testuser&email=test@example.com&password=123456&phone=13800138000"
 
 # 预期返回：
@@ -195,7 +195,7 @@ curl -X POST http://localhost:8080/user/register \
 
 ```bash
 # 第二次用同样的邮箱注册
-curl -X POST http://localhost:8080/user/register \
+curl -X POST http://localhost:8081/user/register \
   -d "username=testuser2&email=test@example.com&password=123456&phone=13800138001"
 
 # 预期返回：
@@ -209,7 +209,7 @@ curl -X POST http://localhost:8080/user/register \
 ### 测试场景 3：无效的邮箱格式
 
 ```bash
-curl -X POST http://localhost:8080/user/register \
+curl -X POST http://localhost:8081/user/register \
   -d "username=testuser3&email=invalidemail&password=123456&phone=13800138002"
 
 # 预期返回：
@@ -224,7 +224,7 @@ curl -X POST http://localhost:8080/user/register \
 
 ```bash
 # 注册成功后
-curl -X GET http://localhost:8080/user/login \
+curl -X GET http://localhost:8081/user/login \
   -d "username=testuser&password=123456"
 
 # 预期：返回用户信息和 token

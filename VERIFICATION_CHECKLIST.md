@@ -106,7 +106,7 @@ grep -B 5 -A 5 "emailQuery\|usernameQuery" \
 ```bash
 ./test_registration.sh
 # 或手动执行：
-curl -X POST http://localhost:8080/user/register \
+curl -X POST http://localhost:8081/user/register \
   -d "username=testuser&email=test@example.com&password=123456&phone=13800138000"
 
 # 预期响应
@@ -117,7 +117,7 @@ curl -X POST http://localhost:8080/user/register \
 }
 
 # 登录
-curl -X GET http://localhost:8080/user/login \
+curl -X GET http://localhost:8081/user/login \
   -d "username=testuser&password=123456"
 
 # 预期：返回用户信息
@@ -125,7 +125,7 @@ curl -X GET http://localhost:8080/user/login \
 
 #### 场景 2: 邮箱重复
 ```bash
-curl -X POST http://localhost:8080/user/register \
+curl -X POST http://localhost:8081/user/register \
   -d "username=user2&email=test@example.com&password=123456&phone=13800138001"
 
 # 预期响应
@@ -138,7 +138,7 @@ curl -X POST http://localhost:8080/user/register \
 
 #### 场景 3: 邮箱格式不合法
 ```bash
-curl -X POST http://localhost:8080/user/register \
+curl -X POST http://localhost:8081/user/register \
   -d "username=user3&email=invalid&password=123456&phone=13800138002"
 
 # 预期响应
@@ -151,7 +151,7 @@ curl -X POST http://localhost:8080/user/register \
 
 #### 场景 4: 密码太短
 ```bash
-curl -X POST http://localhost:8080/user/register \
+curl -X POST http://localhost:8081/user/register \
   -d "username=user4&email=user4@example.com&password=123&phone=13800138003"
 
 # 预期响应
