@@ -1,7 +1,6 @@
 package com.nju.backend.service.user.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nju.backend.config.JwtUtil;
 import com.nju.backend.config.vo.UserVO;
 import com.nju.backend.repository.mapper.UserMapper;
 import com.nju.backend.repository.po.User;
@@ -14,8 +13,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 
 @Component
 public class UserServiceImpl implements UserService {
