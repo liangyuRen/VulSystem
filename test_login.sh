@@ -48,8 +48,7 @@ echo ""
 
 # 发送登录请求
 echo "发送请求..."
-RESPONSE=$(curl -s -X GET "$BASE_URL/user/login" \
-    -d "username=${USERNAME}&password=${PASSWORD}")
+RESPONSE=$(curl -s "$BASE_URL/user/login?username=${USERNAME}&password=${PASSWORD}")
 
 echo ""
 echo "API 响应:"
@@ -72,7 +71,7 @@ echo ""
 echo "─────────────────────────────────────────────────────────────"
 
 # 检查响应
-if echo "$RESPONSE" | grep -q '"code":0'; then
+if echo "$RESPONSE" | grep -q '"code":200'; then
     echo "✅ 登录成功！"
     echo ""
     echo "返回的用户信息:"
@@ -83,9 +82,8 @@ if echo "$RESPONSE" | grep -q '"code":0'; then
 import sys, json
 try:
     data = json.load(sys.stdin)
-    if 'data' in data and data['data']:
-        user = data['data']
-        print(f\"  ID: {user.get('id', 'N/A')}\")
+    if 'obj' in data and data['obj']:
+        user = data['obj']
         print(f\"  用户名: {user.get('userName', 'N/A')}\")
         print(f\"  邮箱: {user.get('email', 'N/A')}\")
         print(f\"  电话: {user.get('phone', 'N/A')}\")
@@ -98,7 +96,7 @@ except:
 
     exit 0
 
-elif echo "$RESPONSE" | grep -q '"ok":true'; then
+elif echo "$RESPONSE" | grep -q '"code":0'; then
     echo "✅ 登录成功！"
     exit 0
 
