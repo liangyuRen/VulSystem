@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UserVO {
 
+    private Integer id;
+
     private String userName;
 
     private String companyName;

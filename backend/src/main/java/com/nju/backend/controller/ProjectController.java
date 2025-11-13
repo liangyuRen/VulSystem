@@ -2,6 +2,8 @@ package com.nju.backend.controller;
 
 import com.nju.backend.config.RespBean;
 import com.nju.backend.config.RespBeanEnum;
+import com.nju.backend.repository.mapper.ProjectMapper;
+import com.nju.backend.repository.po.Project;
 import com.nju.backend.service.project.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.PathResource;
@@ -15,12 +17,17 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/project")
 public class ProjectController {
     @Autowired
     private ProjectService projectService;
+
+    @Autowired
+    private ProjectMapper projectMapper;
 
     //新建项目
     @PostMapping("/create")
@@ -46,6 +53,63 @@ public class ProjectController {
             return RespBean.success(projectService.uploadFile(file));
         } catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR, e.getMessage());
+        }
+    }
+
+    /**
+     * 统一的项目上传和创建接口
+     * 前端调用此接口上传文件并创建项目
+     * 服务器自动检测项目语言，不依赖前端的语言参数
+     */
+    @PostMapping("/uploadProject")
+    public RespBean uploadProject(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("name") String name,
+            @RequestParam("description") String description,
+            @RequestParam(value = "riskThreshold", required = false) Integer riskThreshold,
+            @RequestParam("companyId") int companyId) {
+        try {
+            System.out.println("=== uploadProject 接口被调用 ===");
+            System.out.println("文件名: " + file.getOriginalFilename());
+            System.out.println("项目名: " + name);
+            System.out.println("companyId: " + companyId);
+
+            // 验证文件是否为空
+            if (file.isEmpty()) {
+                return RespBean.error(RespBeanEnum.ERROR, "上传文件为空");
+            }
+
+            // 处理参数：默认风险阈值为0
+            int riskThresholdValue = (riskThreshold != null && riskThreshold > 0) ? riskThreshold : 0;
+
+            // 【关键改动】上传文件并自动检测项目语言
+            System.out.println("步骤1: 开始上传并检测语言...");
+            Map<String, Object> uploadResult = projectService.uploadFileWithLanguageDetection(file);
+            String filePath = (String) uploadResult.get("filePath");
+            String detectedLanguage = (String) uploadResult.get("language");
+
+            System.out.println("步骤2: 文件上传成功");
+            System.out.println("  - 文件路径: " + filePath);
+            System.out.println("  - 检测语言: " + detectedLanguage);
+
+            // 【关键改动】使用检测到的语言创建项目，而不是前端参数
+            System.out.println("步骤3: 开始创建项目，使用检测到的语言: " + detectedLanguage);
+            projectService.createProject(name, description, detectedLanguage, riskThresholdValue, companyId, filePath);
+            System.out.println("步骤4: 项目创建成功");
+
+            // 返回成功响应，包含检测结果
+            return RespBean.success(new java.util.HashMap<String, Object>() {{
+                put("status", "analyzing");
+                put("message", "项目上传成功，检测到语言: " + detectedLanguage);
+                put("detectedLanguage", detectedLanguage);
+                put("filePath", filePath);
+            }});
+        } catch (Exception e) {
+            System.err.println("=== uploadProject 接口异常 ===");
+            System.err.println("异常类型: " + e.getClass().getName());
+            System.err.println("异常信息: " + e.getMessage());
+            e.printStackTrace();
+            return RespBean.error(RespBeanEnum.ERROR, "文件上传失败: " + e.getMessage());
         }
     }
 
@@ -125,6 +189,145 @@ public class ProjectController {
                     .body(resource);
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * 手动触发项目依赖重新解析接口
+     * 根据指定的语言类型重新解析项目依赖
+     *
+     * @param projectId 项目ID
+     * @param language 语言类型（java, python, go, rust, javascript, php, ruby, erlang, c）
+     */
+    @PostMapping("/reparse")
+    public RespBean reparseProject(
+            @RequestParam("projectId") int projectId,
+            @RequestParam("language") String language) {
+        try {
+            // 直接从数据库获取项目信息
+            Project project = projectMapper.selectById(projectId);
+
+            if (project == null || project.getIsDelete() == 1) {
+                return RespBean.error(RespBeanEnum.ERROR, "项目不存在或已被删除");
+            }
+
+            String filePath = project.getFile();
+            String languageLower = language.toLowerCase();
+
+            System.out.println("========================================");
+            System.out.println("手动触发项目重新解析");
+            System.out.println("项目ID: " + projectId);
+            System.out.println("项目名称: " + project.getName());
+            System.out.println("项目路径: " + filePath);
+            System.out.println("目标语言: " + languageLower);
+            System.out.println("========================================");
+
+            // 根据语言类型调用相应的解析方法
+            switch (languageLower) {
+                case "java":
+                    projectService.asyncParseJavaProject(filePath);
+                    break;
+                case "c":
+                case "cpp":
+                case "c++":
+                    projectService.asyncParseCProject(filePath);
+                    break;
+                case "python":
+                    projectService.asyncParsePythonProject(filePath);
+                    break;
+                case "rust":
+                    projectService.asyncParseRustProject(filePath);
+                    break;
+                case "go":
+                case "golang":
+                    projectService.asyncParseGoProject(filePath);
+                    break;
+                case "javascript":
+                case "js":
+                case "node":
+                case "nodejs":
+                    projectService.asyncParseJavaScriptProject(filePath);
+                    break;
+                case "php":
+                    projectService.asyncParsePhpProject(filePath);
+                    break;
+                case "ruby":
+                    projectService.asyncParseRubyProject(filePath);
+                    break;
+                case "erlang":
+                    projectService.asyncParseErlangProject(filePath);
+                    break;
+                default:
+                    return RespBean.error(RespBeanEnum.ERROR,
+                        "不支持的语言类型: " + language +
+                        "\n支持的语言: java, python, go, rust, javascript, php, ruby, erlang, c");
+            }
+
+            return RespBean.success(new HashMap<String, Object>() {{
+                put("status", "parsing");
+                put("message", "已触发" + languageLower + "项目依赖解析，正在后台处理...");
+                put("language", languageLower);
+                put("projectId", projectId);
+                put("projectName", project.getName());
+            }});
+
+        } catch (Exception e) {
+            System.err.println("手动重新解析项目失败: " + e.getMessage());
+            e.printStackTrace();
+            return RespBean.error(RespBeanEnum.ERROR, "重新解析失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量解析多个语言（用于混合语言项目）
+     *
+     * @param projectId 项目ID
+     * @param languages 语言列表，逗号分隔（如: "java,python,go"）
+     */
+    @PostMapping("/reparse/multiple")
+    public RespBean reparseMultipleLanguages(
+            @RequestParam("projectId") int projectId,
+            @RequestParam("languages") String languages) {
+        try {
+            String[] languageArray = languages.split(",");
+            int successCount = 0;
+            int failCount = 0;
+            StringBuilder errorMessages = new StringBuilder();
+
+            for (String language : languageArray) {
+                try {
+                    RespBean result = reparseProject(projectId, language.trim());
+                    if (result.getCode() == 200) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                        errorMessages.append(language).append(": ").append(result.getMessage()).append("; ");
+                    }
+                } catch (Exception e) {
+                    failCount++;
+                    errorMessages.append(language).append(": ").append(e.getMessage()).append("; ");
+                }
+            }
+
+            // 使用final变量以便在匿名内部类中使用
+            final int finalSuccessCount = successCount;
+            final int finalFailCount = failCount;
+            final String finalErrorMessages = errorMessages.toString();
+
+            if (failCount == 0) {
+                Map<String, Object> resultData = new HashMap<>();
+                resultData.put("status", "success");
+                resultData.put("message", "成功触发" + finalSuccessCount + "个语言的解析任务");
+                resultData.put("successCount", finalSuccessCount);
+                return RespBean.success(resultData);
+            } else {
+                return RespBean.error(RespBeanEnum.ERROR,
+                    "部分解析任务失败: 成功" + finalSuccessCount + "个, 失败" + finalFailCount + "个\n" +
+                    "错误详情: " + finalErrorMessages);
+            }
+
+        } catch (Exception e) {
+            return RespBean.error(RespBeanEnum.ERROR, "批量解析失败: " + e.getMessage());
         }
     }
 

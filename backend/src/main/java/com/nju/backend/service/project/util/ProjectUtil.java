@@ -12,11 +12,15 @@ import com.nju.backend.repository.po.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,9 +44,16 @@ public class ProjectUtil {
     @Autowired
     private VulnerabilityMapper vulnerabilityMapper;
 
-    private final FileStorageConfig fileStorageConfig;
     @Autowired
     private ProjectMapper projectMapper;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    private final FileStorageConfig fileStorageConfig;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String FLASK_BASE_URL = "http://127.0.0.1:5000";
+    private static final String LANGUAGE_DETECT_URL = FLASK_BASE_URL + "/parse/get_primary_language";
 
     public ProjectUtil(FileStorageConfig fileStorageConfig) {
         this.fileStorageConfig = fileStorageConfig;
@@ -554,73 +565,139 @@ public class ProjectUtil {
     return sb.toString();
 }
 
+    /**
+     * 检测项目语言类型
+     * 优先使用Flask API进行检测，失败则回退到本地文件扫描
+     */
     public String detectProjectType(String projectPath) throws IOException {
-        Path path = Paths.get(projectPath);
-        System.out.println("DEBUG: 检测项目类型，路径: " + projectPath);
+        System.out.println("=== 开始检测项目语言 ===");
+        System.out.println("项目路径: " + projectPath);
 
+        // 验证路径是否为目录
+        Path path = Paths.get(projectPath);
         if (!Files.isDirectory(path)) {
-            System.out.println("DEBUG: 路径不是目录: " + projectPath);
+            System.err.println("错误: 路径不是目录: " + projectPath);
             throw new IllegalArgumentException("Invalid project directory");
         }
 
+        // 优先使用Flask API检测
+        try {
+            String detectedLanguage = detectLanguageUsingFlaskAPI(projectPath);
+            if (detectedLanguage != null && !detectedLanguage.equalsIgnoreCase("unknown")) {
+                System.out.println("✓ Flask API检测成功: " + detectedLanguage);
+                return detectedLanguage.toLowerCase();
+            }
+        } catch (Exception e) {
+            System.err.println("⚠ Flask API检测失败，将使用本地文件扫描: " + e.getMessage());
+        }
+
+        // 回退方案：本地文件扫描检测
+        System.out.println("使用本地文件扫描进行检测...");
+        return detectLanguageByFileScanning(path);
+    }
+
+    /**
+     * 使用Flask API检测项目语言
+     */
+    private String detectLanguageUsingFlaskAPI(String projectPath) throws Exception {
+        String encodedPath = URLEncoder.encode(projectPath, StandardCharsets.UTF_8.toString());
+        String url = LANGUAGE_DETECT_URL + "?project_folder=" + encodedPath + "&use_optimized=true";
+
+        System.out.println("调用Flask API: " + url);
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+        if (response.getStatusCode().is2xxSuccessful()) {
+            Map<String, Object> responseBody = objectMapper.readValue(response.getBody(), Map.class);
+            String language = (String) responseBody.get("language");
+            System.out.println("Flask API返回语言: " + language);
+            return language;
+        }
+
+        throw new Exception("Flask API请求失败，HTTP状态码: " + response.getStatusCode());
+    }
+
+    /**
+     * 本地文件扫描检测项目语言（回退方案）
+     */
+    private String detectLanguageByFileScanning(Path path) throws IOException {
         final boolean[] hasJava = {false};
         final boolean[] hasC = {false};
-        final List<String> javaFiles = new ArrayList<>();
-        final List<String> cFiles = new ArrayList<>();
-        final List<String> allFiles = new ArrayList<>();
+        final boolean[] hasCpp = {false};
+        final boolean[] hasPython = {false};
+        final boolean[] hasRust = {false};
+        final boolean[] hasGo = {false};
+        final boolean[] hasNodeJs = {false};
+        final boolean[] hasPhp = {false};
+        final boolean[] hasRuby = {false};
+        final boolean[] hasErlang = {false};
 
-        // 限制递归深度为3层（根目录+2级子目录）
-        try (Stream<Path> stream = Files.walk(path, 3)) {
+        // 限制递归深度为10层（改进：原来为3层，容易遗漏深层项目的特征文件）
+        try (Stream<Path> stream = Files.walk(path, 10)) {
             stream.forEach(file -> {
-                String fileName = file.getFileName().toString();
-                String fileNameLower = fileName.toLowerCase();
-                allFiles.add(file.toString());
+                String fileName = file.getFileName().toString().toLowerCase();
 
-                // 检测Java特征
-                if (fileNameLower.equals("pom.xml")
-                        || fileNameLower.equals("build.gradle")
-                        || fileNameLower.endsWith(".java")) {
+                // Java
+                if (fileName.equals("pom.xml") || fileName.equals("build.gradle") ||
+                    fileName.equals("settings.gradle") || fileName.endsWith(".java")) {
                     hasJava[0] = true;
-                    javaFiles.add(fileName);
-                    System.out.println("DEBUG: 发现Java特征文件: " + fileName);
                 }
-
-                // 检测C特征
-                if (fileNameLower.equals("makefile")
-                        || fileNameLower.equals("cmakelists.txt")
-                        || fileNameLower.endsWith(".c")
-                        || fileNameLower.endsWith(".h")) {
-                    hasC[0] = true;
-                    cFiles.add(fileName);
-                    System.out.println("DEBUG: 发现C/C++特征文件: " + fileName);
+                // C/C++
+                else if (fileName.equals("makefile") || fileName.equals("cmakelists.txt") ||
+                         fileName.endsWith(".c") || fileName.endsWith(".cpp") ||
+                         fileName.endsWith(".cc") || fileName.endsWith(".cxx") || fileName.endsWith(".h")) {
+                    if (fileName.endsWith(".cpp") || fileName.endsWith(".cc") || fileName.endsWith(".cxx")) {
+                        hasCpp[0] = true;
+                    } else {
+                        hasC[0] = true;
+                    }
+                }
+                // Python
+                else if (fileName.equals("setup.py") || fileName.equals("requirements.txt") ||
+                         fileName.equals("pyproject.toml") || fileName.equals("pipfile") || fileName.endsWith(".py")) {
+                    hasPython[0] = true;
+                }
+                // Rust
+                else if (fileName.equals("cargo.toml") || fileName.equals("cargo.lock") || fileName.endsWith(".rs")) {
+                    hasRust[0] = true;
+                }
+                // Go
+                else if (fileName.equals("go.mod") || fileName.equals("go.sum") || fileName.endsWith(".go")) {
+                    hasGo[0] = true;
+                }
+                // JavaScript/Node.js
+                else if (fileName.equals("package.json") || fileName.equals("package-lock.json") ||
+                         fileName.equals("yarn.lock") || fileName.endsWith(".js") || fileName.endsWith(".ts")) {
+                    hasNodeJs[0] = true;
+                }
+                // PHP
+                else if (fileName.equals("composer.json") || fileName.equals("composer.lock") || fileName.endsWith(".php")) {
+                    hasPhp[0] = true;
+                }
+                // Ruby
+                else if (fileName.equals("gemfile") || fileName.equals("gemfile.lock") ||
+                         fileName.endsWith(".rb") || fileName.endsWith(".gemspec")) {
+                    hasRuby[0] = true;
+                }
+                // Erlang
+                else if (fileName.equals("rebar.config") || fileName.equals("rebar.lock") || fileName.endsWith(".erl")) {
+                    hasErlang[0] = true;
                 }
             });
         }
 
-        System.out.println("DEBUG: 项目目录包含总文件数: " + allFiles.size());
-        System.out.println("DEBUG: Java特征文件数: " + javaFiles.size());
-        System.out.println("DEBUG: C/C++特征文件数: " + cFiles.size());
+        // 按优先级返回检测结果
+        if (hasJava[0]) return "java";
+        if (hasRust[0]) return "rust";
+        if (hasGo[0]) return "go";
+        if (hasPython[0]) return "python";
+        if (hasPhp[0]) return "php";
+        if (hasRuby[0]) return "ruby";
+        if (hasErlang[0]) return "erlang";
+        if (hasCpp[0]) return "cpp";
+        if (hasC[0]) return "c";
+        if (hasNodeJs[0]) return "javascript";
 
-        // 显示前10个文件用于调试
-        System.out.println("DEBUG: 目录中的前10个文件:");
-        allFiles.stream().limit(10).forEach(f -> System.out.println("DEBUG: - " + f));
-
-        // 决策逻辑：Java特征优先
-        String result;
-        if (hasJava[0] && hasC[0]) {
-            result = "java"; // 同时存在时优先返回Java
-            System.out.println("DEBUG: 同时检测到Java和C特征，返回Java");
-        } else if (hasJava[0]) {
-            result = "java";
-            System.out.println("DEBUG: 检测到Java特征，返回java");
-        } else if (hasC[0]) {
-            result = "c";
-            System.out.println("DEBUG: 检测到C/C++特征，返回c");
-        } else {
-            result = "unknown";
-            System.out.println("DEBUG: 未检测到任何已知项目类型特征，返回unknown");
-        }
-
-        return result;
+        System.out.println("⚠ 未检测到任何已知项目类型特征");
+        return "unknown";
     }
 }

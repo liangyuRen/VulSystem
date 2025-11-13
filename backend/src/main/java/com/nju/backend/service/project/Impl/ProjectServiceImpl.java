@@ -35,8 +35,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static jdk.nashorn.internal.runtime.regexp.joni.Config.log;
-
 @Component
 public class ProjectServiceImpl implements ProjectService, ApplicationContextAware {
 
@@ -186,7 +184,7 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
             int insertCount = 0;
             for (WhiteList whiteList : whiteLists) {
                 whiteList.setFilePath(filePath);
-                whiteList.setLanguage("c/c++");
+                whiteList.setLanguage("c");  // 修复: 统一使用 "c"，与 project.language 一致
                 whiteList.setIsdelete(0);
                 int result = whiteListMapper.insert(whiteList);
                 if (result > 0) {
@@ -204,31 +202,87 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     public String uploadFile(MultipartFile file) throws IOException {
         String filePath = projectUtil.unzipAndSaveFile(file);
         System.out.println("文件解压完成，路径: " + filePath);
-        String projectType = "";
-        
-        Map<String, Double> languagePercent = ProjectUtil.calcLanguagePercentByFileSize(filePath);
-        if (languagePercent.size() == 2) {
-            for (Map.Entry<String, Double> entry : languagePercent.entrySet()) {
-                if (!entry.getKey().equals("Other")) {
-                    projectType = entry.getKey();
-                    break;
-                }
-            }
-        }else {
-            projectType = ProjectUtil.mapToJson(languagePercent);
-        }
-
-        if(projectType.equals("java")) {
-            System.out.println("启动Java项目解析任务");
-            applicationContext.getBean(ProjectService.class).asyncParseJavaProject(filePath);
-        } else if(projectType.equals("c")) {
-            System.out.println("启动C/C++项目解析任务");
-            applicationContext.getBean(ProjectService.class).asyncParseCProject(filePath);
-        } else {
-            System.out.println("未知项目类型，跳过解析: " + projectType);
-        }
-
         return filePath;
+    }
+
+    /**
+     * 上传文件并检测项目语言（新方法）
+     * 返回包含 filePath 和 detectedLanguage 的 Map
+     */
+    @Override
+    public Map<String, Object> uploadFileWithLanguageDetection(MultipartFile file) throws IOException {
+        // 第一步：解压文件
+        String filePath = projectUtil.unzipAndSaveFile(file);
+        System.out.println("文件解压完成，路径: " + filePath);
+
+        // 第二步：使用精确的语言检测方法
+        String detectedLanguage;
+        try {
+            detectedLanguage = projectUtil.detectProjectType(filePath);
+            System.out.println("✓ 检测到项目语言: " + detectedLanguage);
+        } catch (Exception e) {
+            System.err.println("✗ 语言检测失败: " + e.getMessage());
+            detectedLanguage = "unknown";
+        }
+
+        // 第三步：返回检测结果
+        Map<String, Object> result = new HashMap<>();
+        result.put("filePath", filePath);
+        result.put("language", detectedLanguage);
+
+        // 第四步：根据检测结果异步解析项目
+        // 【关键】支持多种语言的解析器调用
+        System.out.println("准备触发异步解析，语言类型: " + detectedLanguage);
+        switch (detectedLanguage.toLowerCase()) {
+            case "java":
+                System.out.println("✓ 启动Java项目解析任务");
+                applicationContext.getBean(ProjectService.class).asyncParseJavaProject(filePath);
+                break;
+            case "c":
+                System.out.println("✓ 启动C/C++项目解析任务");
+                applicationContext.getBean(ProjectService.class).asyncParseCProject(filePath);
+                break;
+            case "python":
+                System.out.println("✓ 启动Python项目解析任务");
+                asyncParsePythonProject(filePath);
+                break;
+            case "rust":
+                System.out.println("✓ 启动Rust项目解析任务");
+                asyncParseRustProject(filePath);
+                break;
+            case "go":
+                System.out.println("✓ 启动Go项目解析任务");
+                asyncParseGoProject(filePath);
+                break;
+            case "javascript":
+                System.out.println("✓ 启动JavaScript项目解析任务");
+                asyncParseJavaScriptProject(filePath);
+                break;
+            case "php":
+                System.out.println("✓ 启动PHP项目解析任务");
+                asyncParsePhpProject(filePath);
+                break;
+            case "ruby":
+                System.out.println("✓ 启动Ruby项目解析任务");
+                asyncParseRubyProject(filePath);
+                break;
+            case "erlang":
+                System.out.println("✓ 启动Erlang项目解析任务");
+                asyncParseErlangProject(filePath);
+                break;
+            default:
+                System.out.println("⚠ 不支持的项目类型或无法检测: " + detectedLanguage);
+                System.out.println("项目路径: " + filePath);
+                System.out.println("✓ 已尝试使用通用解析器处理...");
+                // 改进：为 Unknown 语言添加详细的调试信息和通用解析
+                try {
+                    asyncParseUnknownProject(filePath, detectedLanguage);
+                } catch (Exception e) {
+                    System.err.println("✗ 通用解析器也失败: " + e.getMessage());
+                }
+        }
+
+        return result;
     }
 
     @Override
@@ -745,5 +799,215 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
     private String escapeXml(String str) {
         if (str == null) return "";
         return str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&apos;");
+    }
+
+    @Async("projectAnalysisExecutor")
+    public void asyncParsePythonProject(String filePath) {
+        callParserAPI("python", "http://localhost:5000/parse/python_parse", filePath);
+    }
+
+    @Async("projectAnalysisExecutor")
+    public void asyncParseRustProject(String filePath) {
+        callParserAPI("rust", "http://localhost:5000/parse/rust_parse", filePath);
+    }
+
+    @Async("projectAnalysisExecutor")
+    public void asyncParseGoProject(String filePath) {
+        callParserAPI("go", "http://localhost:5000/parse/go_parse", filePath);
+    }
+
+    @Async("projectAnalysisExecutor")
+    public void asyncParseJavaScriptProject(String filePath) {
+        callParserAPI("javascript", "http://localhost:5000/parse/javascript_parse", filePath);
+    }
+
+    @Async("projectAnalysisExecutor")
+    public void asyncParsePhpProject(String filePath) {
+        callParserAPI("php", "http://localhost:5000/parse/php_parse", filePath);
+    }
+
+    @Async("projectAnalysisExecutor")
+    public void asyncParseRubyProject(String filePath) {
+        callParserAPI("ruby", "http://localhost:5000/parse/ruby_parse", filePath);
+    }
+
+    @Async("projectAnalysisExecutor")
+    public void asyncParseErlangProject(String filePath) {
+        callParserAPI("erlang", "http://localhost:5000/parse/erlang_parse", filePath);
+    }
+
+    /**
+     * 处理未知语言项目的通用解析方法
+     * 尝试使用 Flask 的统一解析接口处理
+     */
+    public void asyncParseUnknownProject(String filePath, String detectedLanguage) {
+        System.out.println("开始处理未知语言项目: " + detectedLanguage);
+        System.out.println("项目路径: " + filePath);
+        try {
+            // 调用 Flask 的统一解析接口
+            RestTemplate restTemplate = new RestTemplate();
+            String url = UriComponentsBuilder.fromHttpUrl("http://localhost:5000/parse/unified_parse")
+                    .queryParam("project_folder", filePath)
+                    .encode()
+                    .build()
+                    .toUriString();
+
+            System.out.println("调用统一解析API: " + url);
+            String response = restTemplate.getForObject(url, String.class);
+
+            if (response == null || response.trim().isEmpty()) {
+                System.err.println("统一解析API返回空响应，项目路径: " + filePath);
+                System.out.println("建议: 检查项目是否包含依赖配置文件（如 requirements.txt、package.json 等）");
+                return;
+            }
+
+            List<WhiteList> whiteLists = projectUtil.parseJsonData(response);
+            System.out.println("通用解析出依赖库数量: " + whiteLists.size());
+
+            // 保存依赖库信息
+            int insertCount = 0;
+            for (WhiteList whiteList : whiteLists) {
+                whiteList.setFilePath(filePath);
+                // language 字段由统一解析器返回，或使用 detectedLanguage
+                if (whiteList.getLanguage() == null || whiteList.getLanguage().isEmpty()) {
+                    whiteList.setLanguage(detectedLanguage);
+                }
+                whiteList.setIsdelete(0);
+                if (whiteListMapper.insert(whiteList) > 0) {
+                    insertCount++;
+                }
+            }
+            System.out.println("成功插入" + detectedLanguage + "依赖库数量: " + insertCount);
+
+        } catch (Exception e) {
+            System.err.println("处理未知语言项目失败，路径: " + filePath + "，错误: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 通用的依赖解析API调用方法
+     * 支持所有编程语言的依赖解析
+     *
+     * @param language 语言名称（用于日志和数据库标记）
+     * @param apiUrl Flask解析API的URL
+     * @param filePath 项目文件路径
+     */
+    private void callParserAPI(String language, String apiUrl, String filePath) {
+        System.out.println("========================================");
+        System.out.println("开始解析" + language.toUpperCase() + "项目");
+        System.out.println("项目路径: " + filePath);
+        System.out.println("========================================");
+
+        long startTime = System.currentTimeMillis();
+
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            String url = UriComponentsBuilder.fromHttpUrl(apiUrl)
+                    .queryParam("project_folder", filePath)
+                    .encode()
+                    .build()
+                    .toUriString();
+
+            System.out.println("→ 调用Flask API: " + apiUrl);
+            System.out.println("→ 完整URL: " + url);
+
+            // 调用Flask API获取依赖信息
+            String response = restTemplate.getForObject(url, String.class);
+
+            // 验证响应内容
+            if (response == null || response.trim().isEmpty()) {
+                System.err.println("✗ " + language + "解析API返回空响应");
+                System.err.println("  可能原因: Flask服务未运行或项目路径无效");
+                System.err.println("  项目路径: " + filePath);
+                return;
+            }
+
+            // 检查是否返回了HTML错误页面
+            if (response.contains("<!doctype html>") || response.contains("<html")) {
+                System.err.println("✗ " + language + "解析API返回HTML错误页面");
+                System.err.println("  响应内容预览: " + response.substring(0, Math.min(300, response.length())));
+                return;
+            }
+
+            System.out.println("✓ API响应接收成功，长度: " + response.length() + " 字符");
+            System.out.println("  响应内容预览: " + response.substring(0, Math.min(150, response.length())) + "...");
+
+            // 解析JSON响应为WhiteList对象列表
+            List<WhiteList> whiteLists = projectUtil.parseJsonData(response);
+
+            if (whiteLists == null || whiteLists.isEmpty()) {
+                System.out.println("⚠ 未解析出任何依赖库");
+                System.out.println("  可能原因: 项目中没有依赖配置文件，或文件格式不符合规范");
+                return;
+            }
+
+            System.out.println("✓ 成功解析出依赖库数量: " + whiteLists.size());
+
+            // 保存依赖信息到数据库
+            int insertCount = 0;
+            int duplicateCount = 0;
+            int errorCount = 0;
+
+            for (WhiteList whiteList : whiteLists) {
+                try {
+                    // 设置必要字段
+                    whiteList.setFilePath(filePath);
+                    whiteList.setLanguage(language.toLowerCase());
+                    whiteList.setIsdelete(0);
+
+                    // 检查是否已存在相同的依赖（避免重复插入）
+                    // 这里简化处理，直接插入，由数据库唯一索引处理重复问题
+                    int result = whiteListMapper.insert(whiteList);
+                    if (result > 0) {
+                        insertCount++;
+                    } else {
+                        duplicateCount++;
+                    }
+                } catch (Exception e) {
+                    errorCount++;
+                    System.err.println("  插入失败: " + whiteList.getName() + " - " + e.getMessage());
+                }
+            }
+
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+
+            System.out.println("========================================");
+            System.out.println("✓ " + language.toUpperCase() + "项目解析完成");
+            System.out.println("  总依赖数: " + whiteLists.size());
+            System.out.println("  成功插入: " + insertCount);
+            if (duplicateCount > 0) {
+                System.out.println("  重复跳过: " + duplicateCount);
+            }
+            if (errorCount > 0) {
+                System.out.println("  插入失败: " + errorCount);
+            }
+            System.out.println("  耗时: " + duration + " ms");
+            System.out.println("========================================");
+
+        } catch (org.springframework.web.client.ResourceAccessException e) {
+            System.err.println("========================================");
+            System.err.println("✗ Flask服务连接失败");
+            System.err.println("  错误: " + e.getMessage());
+            System.err.println("  请确保Flask服务已启动 (http://localhost:5000)");
+            System.err.println("  项目路径: " + filePath);
+            System.err.println("========================================");
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            System.err.println("========================================");
+            System.err.println("✗ Flask API请求失败");
+            System.err.println("  HTTP状态码: " + e.getStatusCode());
+            System.err.println("  错误信息: " + e.getStatusText());
+            System.err.println("  响应内容: " + e.getResponseBodyAsString());
+            System.err.println("========================================");
+        } catch (Exception e) {
+            System.err.println("========================================");
+            System.err.println("✗ 解析" + language + "项目失败");
+            System.err.println("  项目路径: " + filePath);
+            System.err.println("  错误类型: " + e.getClass().getName());
+            System.err.println("  错误信息: " + e.getMessage());
+            System.err.println("========================================");
+            e.printStackTrace();
+        }
     }
 }

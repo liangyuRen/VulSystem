@@ -25,7 +25,36 @@ public interface ProjectService {
     @Async("projectAnalysisExecutor")
     void asyncParseCProject(String filePath);
 
+    @Async("projectAnalysisExecutor")
+    void asyncParsePythonProject(String filePath);
+
+    @Async("projectAnalysisExecutor")
+    void asyncParseRustProject(String filePath);
+
+    @Async("projectAnalysisExecutor")
+    void asyncParseGoProject(String filePath);
+
+    @Async("projectAnalysisExecutor")
+    void asyncParseJavaScriptProject(String filePath);
+
+    @Async("projectAnalysisExecutor")
+    void asyncParsePhpProject(String filePath);
+
+    @Async("projectAnalysisExecutor")
+    void asyncParseRubyProject(String filePath);
+
+    @Async("projectAnalysisExecutor")
+    void asyncParseErlangProject(String filePath);
+
     String uploadFile(MultipartFile file) throws IOException;
+
+    /**
+     * 上传文件并自动检测项目语言
+     * @param file 上传的项目文件
+     * @return 包含 filePath 和 language 的 Map
+     * @throws IOException 文件处理异常
+     */
+    Map<String, Object> uploadFileWithLanguageDetection(MultipartFile file) throws IOException;
 
     List<VulnerabilityVO> getVulnerabilities(int id);
 
