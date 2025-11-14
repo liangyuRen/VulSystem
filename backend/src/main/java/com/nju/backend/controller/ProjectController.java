@@ -97,10 +97,14 @@ public class ProjectController {
             projectService.createProject(name, description, detectedLanguage, riskThresholdValue, companyId, filePath);
             System.out.println("步骤4: 项目创建成功");
 
+            // 【新增】步骤5: 自动触发依赖解析
+            System.out.println("步骤5: 自动触发依赖解析...");
+            triggerAutoDependencyParsing(detectedLanguage, filePath);
+
             // 返回成功响应，包含检测结果
             return RespBean.success(new java.util.HashMap<String, Object>() {{
-                put("status", "analyzing");
-                put("message", "项目上传成功，检测到语言: " + detectedLanguage);
+                put("status", "parsing");
+                put("message", "项目上传成功，检测到语言: " + detectedLanguage + "，正在后台解析依赖...");
                 put("detectedLanguage", detectedLanguage);
                 put("filePath", filePath);
             }});
@@ -328,6 +332,78 @@ public class ProjectController {
 
         } catch (Exception e) {
             return RespBean.error(RespBeanEnum.ERROR, "批量解析失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 自动触发依赖解析（上传项目后调用）
+     *
+     * @param language 检测到的项目语言
+     * @param filePath 项目文件路径
+     */
+    private void triggerAutoDependencyParsing(String language, String filePath) {
+        System.out.println("========================================");
+        System.out.println("自动触发依赖解析");
+        System.out.println("语言: " + language);
+        System.out.println("路径: " + filePath);
+        System.out.println("========================================");
+
+        try {
+            String languageLower = language.toLowerCase();
+
+            switch (languageLower) {
+                case "java":
+                    System.out.println("→ 触发 Java 依赖解析");
+                    projectService.asyncParseJavaProject(filePath);
+                    break;
+                case "python":
+                    System.out.println("→ 触发 Python 依赖解析");
+                    projectService.asyncParsePythonProject(filePath);
+                    break;
+                case "php":
+                    System.out.println("→ 触发 PHP 依赖解析");
+                    projectService.asyncParsePhpProject(filePath);
+                    break;
+                case "ruby":
+                    System.out.println("→ 触发 Ruby 依赖解析");
+                    projectService.asyncParseRubyProject(filePath);
+                    break;
+                case "go":
+                case "golang":
+                    System.out.println("→ 触发 Go 依赖解析");
+                    projectService.asyncParseGoProject(filePath);
+                    break;
+                case "rust":
+                    System.out.println("→ 触发 Rust 依赖解析");
+                    projectService.asyncParseRustProject(filePath);
+                    break;
+                case "javascript":
+                case "js":
+                case "node":
+                case "nodejs":
+                    System.out.println("→ 触发 JavaScript 依赖解析");
+                    projectService.asyncParseJavaScriptProject(filePath);
+                    break;
+                case "erlang":
+                    System.out.println("→ 触发 Erlang 依赖解析");
+                    projectService.asyncParseErlangProject(filePath);
+                    break;
+                case "c":
+                case "cpp":
+                case "c++":
+                    System.out.println("→ 触发 C/C++ 依赖解析");
+                    projectService.asyncParseCProject(filePath);
+                    break;
+                default:
+                    System.out.println("⚠ 不支持的语言: " + language + "，跳过依赖解析");
+            }
+
+            System.out.println("✓ 依赖解析任务已提交到后台线程池");
+
+        } catch (Exception e) {
+            System.err.println("✗ 自动触发依赖解析失败: " + e.getMessage());
+            e.printStackTrace();
+            // 不抛出异常，避免影响项目创建
         }
     }
 
