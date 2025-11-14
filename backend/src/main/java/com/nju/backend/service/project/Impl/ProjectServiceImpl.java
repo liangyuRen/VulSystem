@@ -2,7 +2,6 @@ package com.nju.backend.service.project.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nju.backend.config.vo.ProjectVO;
 import com.nju.backend.config.vo.VulnerabilityVO;
@@ -323,8 +322,16 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
 
         String projectJson = company.getProjectId();
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, String> projectMap = objectMapper.readValue(projectJson, new TypeReference<Map<String, String>>() {
-        });
+        Map<String, String> projectMap = new HashMap<>();
+
+        try {
+            if (projectJson != null && !projectJson.trim().isEmpty()) {
+                projectMap = objectMapper.readValue(projectJson, Map.class);
+            }
+        } catch (JsonProcessingException e) {
+            System.err.println("Failed to parse project JSON: " + e.getMessage());
+            projectMap = new HashMap<>();
+        }
 
         if (projectMap == null || projectMap.isEmpty()) {
             return Collections.emptyList();
@@ -380,10 +387,12 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> projectMap = null;
         try {
-            projectMap = objectMapper.readValue(company.getProjectId(), new TypeReference<Map<String, String>>() {
-            });
+            if (company.getProjectId() != null && !company.getProjectId().trim().isEmpty()) {
+                projectMap = objectMapper.readValue(company.getProjectId(), Map.class);
+            }
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            System.err.println("Failed to parse project ID JSON: " + e.getMessage());
+            projectMap = new HashMap<>();
         }
 
         //projectCount = projectMap != null ? projectMap.size() : 0;

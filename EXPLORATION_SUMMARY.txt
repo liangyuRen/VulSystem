@@ -1,0 +1,91 @@
+# VulSystem 代码结构探索总结
+
+项目阶段: 后端已完成，正在进行SpringBoot-Flask集成
+主要工作: 语言检测、文件上传、依赖解析、漏洞检测
+
+## 后端核心文件位置
+
+### 关键类
+1. ProjectController.java (L56-108)
+   - uploadProject() 统一上传接口
+   
+2. ProjectServiceImpl.java
+   - uploadFile() (L203-232) - 文件处理
+   - asyncParseJavaProject() (L103-151) - Java解析
+   - asyncParseCProject() (L153-201) - C解析
+   
+3. ProjectUtil.java
+   - detectProjectType() (L557-625) - 语言检测 ★
+   - unzipAndSaveFile() (L51-404) - 解压处理
+   - calcLanguagePercentByFileSize() (L491-512) - 语言占比
+   
+4. VulnerabilityJobHandler.java
+   - detectVulnerabilities() (L171-366) - 漏洞检测 ★
+
+### 数据模型
+- Project.java - language字段存储项目语言
+- Vulnerability.java - language字段存储漏洞语言
+- WhiteList.java - language字段存储依赖库语言
+- Company.java - white_list JSON包含language
+
+## Flask接口集成要点
+
+### 已实现的接口
+1. /parse/pom_parse - Java依赖解析
+2. /parse/c_parse - C/C++依赖解析
+3. /parse/unified_parse - 统一解析
+4. /parse/detect_language - 语言检测
+5. /vulnerabilities/detect - 核心漏洞检测
+6. /vulnerabilities/github/avd/nvd - 数据获取
+7. /llm/query - LLM增强功能
+
+### 关键调用关系
+文件上传 → detectProjectType() → Flask解析 → 保存white_list
+
+漏洞检测:
+1. Flask获取CVE数据
+2. 对每个公司、每种语言调用检测接口
+3. 根据white_list筛选依赖
+4. 获取匹配结果
+5. 创建Vulnerability记录，标记language
+
+## Language字段的关键作用
+
+在detectVulnerabilities() 中：
+- 支持语言列表: ["java", "c"]
+- 为每个语言筛选white_list
+- 传递language给Flask
+- 在创建Vulnerability时保存language
+
+## 集成状态
+
+SpringBoot: ✓ 完成
+  - 文件上传
+  - 语言检测
+  - 异步解析调用
+  - 数据库设计
+
+Flask: ✓ 大部分完成
+  - 依赖解析
+  - 语言检测
+  - 漏洞检测
+  - LLM集成
+
+集成: ⚠ 进行中
+  - 需要端到端测试
+  - 需要接口联调
+
+## 下一步行动
+
+1. 启动所有服务
+2. 验证基础连接
+3. 测试文件上传和language检测
+4. 测试依赖解析和white_list标记
+5. 测试漏洞检测流程
+
+## 关键配置
+
+后端: D:\kuling\upload (文件上传目录)
+数据库: kulin (MySQL)
+Flask: http://localhost:5000
+SpringBoot: http://localhost:8081
