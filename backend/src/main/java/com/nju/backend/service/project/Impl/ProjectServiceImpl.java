@@ -396,15 +396,12 @@ public class ProjectServiceImpl implements ProjectService, ApplicationContextAwa
         }
 
         //projectCount = projectMap != null ? projectMap.size() : 0;
-        projectCount =0;
+        projectCount = 0;
         if (projectMap != null) {
             for (String projectId : projectMap.keySet()) {
                 Project project = projectMapper.selectById(Integer.parseInt(projectId));
-                if (project == null) {
-                    throw new RuntimeException("Project does not exist.");
-                }
-                if(project.getIsDelete()==1)
-                {
+                // 跳过不存在的项目，而不是抛出异常 (Skip non-existent projects instead of throwing exception)
+                if (project == null || project.getIsDelete() == 1) {
                     continue;
                 }
                 projectCount++;

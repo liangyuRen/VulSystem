@@ -95,6 +95,12 @@
             <version>3.5.9</version>
             <scope>compile</scope>
         </dependency>
+        <!-- Apache HttpClient for RestTemplate -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -127,6 +133,8 @@
                     <source>1.8</source>
                     <target>1.8</target>
                     <encoding>UTF-8</encoding>
+                    <executable>C:\Program Files\Java\jdk-17.0.1\bin\javac.exe</executable>
+                    <fork>true</fork>
                 </configuration>
             </plugin>
             <plugin>

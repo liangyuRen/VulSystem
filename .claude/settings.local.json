@@ -64,7 +64,12 @@
       "Bash(JAVA_HOME=\"C:/Program Files/Java/jdk-17.0.1\" PATH=\"C:/Program Files/Java/jdk-17.0.1/bin:$PATH\" mvn clean compile:*)",
       "Bash(JAVA_HOME=\"C:/Program Files/Java/jdk-17.0.1\" mvn clean compile:*)",
       "Bash(mvn:*)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(set JAVA_HOME=\"C:\\Program Files\\Java\\jdk-17.0.1\")",
+      "Bash(\"C:\\Program Files\\Java\\jdk-17.0.1\\bin\\javac.exe\" -version)",
+      "Bash(set JAVA_HOME=C:Program FilesJavajdk-17.0.1)",
+      "Bash(powershell -Command \"$env:JAVA_HOME=''C:\\Program Files\\Java\\jdk-17.0.1''; $env:PATH=$env:JAVA_HOME + ''\\bin;'' + $env:PATH; cd ''C:\\Users\\任良玉\\Desktop\\kuling\\VulSystem\\backend''; mvn clean compile 2>&1 | tail -40\")",
+      "Bash(cmd /c:*)"
     ],
     "deny": [],
     "ask": []
